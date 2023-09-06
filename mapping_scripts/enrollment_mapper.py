@@ -1,0 +1,128 @@
+###################################################################################################################################
+# This script will map a PCORNet enrollment table 
+###################################################################################################################################
+
+ 
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType
+from datetime import datetime
+from pyspark.sql.functions import *
+from commonFunctions import CommonFuncitons
+import importlib
+import sys
+# from partners import partners_list
+from itertools import chain
+import argparse
+
+
+
+###################################################################################################################################
+# parsing the input arguments to select the partner name
+###################################################################################################################################
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-p", "--partner")
+parser.add_argument("-f", "--data_folder")
+args = parser.parse_args()
+input_partner = args.partner.lower()
+input_data_folder = args.data_folder
+
+cf =CommonFuncitons(input_partner)
+
+# spin the pyspak cluster and
+spark = cf.get_spark_session("enrollment_mapper")
+
+try:
+
+    ###################################################################################################################################
+    # Test if the partner name is valid or not
+    ###################################################################################################################################
+
+
+    if  not cf.valid_partner_name(input_partner):
+
+        print("Error: Unrecognized partner "+input_partner+" !!!!!")
+        sys.exit()
+
+    else:
+
+
+
+    ###################################################################################################################################
+    # Load the config file for the selected parnter
+    ###################################################################################################################################
+
+        partner_dictionaries_path = "partners."+input_partner+".dictionaries"
+        partner_dictionaries = importlib.import_module(partner_dictionaries_path)
+
+                
+        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
+
+
+
+    ###################################################################################################################################
+    # Loading the unmapped enctounter table
+    ###################################################################################################################################
+
+        unmapped_enrollment = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_enrollment.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
+
+
+
+    ###################################################################################################################################
+    # create the mapping from the dictionaries
+    ###################################################################################################################################
+        mapping_chart_dict = create_map([lit(x) for x in chain(*partner_dictionaries.enrollment_chart_dict.items())])
+        mapping_enr_basis_dict = create_map([lit(x) for x in chain(*partner_dictionaries.enrollment_enr_basis_dict.items())])
+        
+
+
+    ###################################################################################################################################
+    # Apply the mappings dictionaries and the common function on the fields of the unmmaped encoutner table
+    ###################################################################################################################################
+
+
+        enrollment = unmapped_enrollment.select(              
+            
+                                    cf.encrypt_id_udf(unmapped_enrollment['PATID']).alias("PATID"),
+                                    cf.get_date_from_datetime_udf(unmapped_enrollment['ENR_START_DATE']).alias("ENR_START_DATE"),
+                                    cf.get_date_from_datetime_udf(unmapped_enrollment['ENR_END_DATE']).alias("ENR_END_DATE"),
+                                    mapping_chart_dict[upper(col('CHART'))].alias("CHART"),
+                                    mapping_enr_basis_dict[upper(col('ENR_BASIS'))].alias("ENR_BASIS"),
+                                    cf.encrypt_id_udf(unmapped_enrollment['PATID']).alias("ENCRYPTED_ORIGINAL_ID"),
+                                    cf.get_current_time_udf().alias("UPDATED"),
+                                    lit(input_partner.upper()).alias("SOURCE"),
+                                    unmapped_enrollment['PATID'].alias("JOIN_FIELD")
+
+                                                            )
+
+    ###################################################################################################################################
+    # Create the output file
+    ###################################################################################################################################
+        enrollment_with_additional_fileds = cf.append_additional_fields(
+            mapped_df = enrollment,
+            file_name = "formatted_enrollment.csv",
+            formatted_data_folder_path = formatted_data_folder_path,
+            join_field = "PATID",
+            spark = spark)
+
+        cf.write_pyspark_output_file(
+                        payspark_df = enrollment_with_additional_fileds,
+                        output_file_name = "mapped_enrollment.csv",
+                        output_data_folder_path= mapped_data_folder_path)
+
+
+
+        spark.stop()
+
+except Exception as e:
+
+    spark.stop()
+    cf.print_failure_message(
+                            folder  = input_data_folder,
+                            partner = input_partner,
+                            job     = 'enrollment_mapper.py' )
+
+    cf.print_with_style(str(e), 'danger red')

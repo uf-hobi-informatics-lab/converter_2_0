@@ -1,0 +1,93 @@
+###################################################################################################################################
+
+# This script will convert an OMOP omop_death table to a PCORnet format as the pcornet_death table
+
+###################################################################################################################################
+
+
+import pyspark
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType
+from datetime import datetime
+from pyspark.sql.functions import *
+from commonFunctions import CommonFuncitons
+import argparse
+
+
+cf =CommonFuncitons('omop_partner_1')
+
+#Create SparkSession
+spark = cf.get_spark_session("death_formatter")
+
+parser = argparse.ArgumentParser()
+parser.add_argument("-f", "--data_folder")
+args = parser.parse_args()
+input_data_folder = args.data_folder
+
+
+try:
+
+    ###################################################################################################################################
+
+    # Loading the omop_death table to be converted to the pcornet_death table
+    # loading the care_site, location, and visit_payer as they are been used to retrive some data for the mapping
+
+    ###################################################################################################################################
+
+    input_data_folder_path               = f'/data/{input_data_folder}/'
+    formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
+
+
+    omop_death_table_name       = 'Death.txt'
+
+    omop_death = spark.read.load(input_data_folder_path+omop_death_table_name,format="csv", sep=",", inferSchema="true", header="true", quote= '"')
+
+
+
+
+    ###################################################################################################################################
+
+    #Converting the fileds to PCORNet pcornet_death Format
+
+    ###################################################################################################################################
+
+    pcornet_death = omop_death.select(              omop_death['person_id'].alias("PATID"),
+                                                    omop_death['death_date'].alias("DEATH_DATE"),
+                                                    omop_death['death_date_input'].alias("DEATH_DATE_IMPUTE"),
+                                                    lit("").alias("DEATH_SOURCE"),
+                                                    lit("").alias("DEATH_MATCH_CONFIDENCE"),
+                                                    
+                                                        )
+
+    ###################################################################################################################################
+
+    # Create the output file
+
+    ###################################################################################################################################
+
+
+    cf.write_pyspark_output_file(
+                        payspark_df = pcornet_death,
+                        output_file_name = "formatted_death.csv",
+                        output_data_folder_path= formatter_output_data_folder_path)
+
+
+    spark.stop()
+
+
+
+except Exception as e:
+
+    spark.stop()
+    cf.print_failure_message(
+                            folder  = input_data_folder,
+                            partner = 'omop_partner_1',
+                            job     = 'death_formatter.py' )
+
+    cf.print_with_style(str(e), 'danger red')
+
+
+
+
+
+
