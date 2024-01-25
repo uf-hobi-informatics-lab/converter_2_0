@@ -6,7 +6,8 @@ Secondary contributor: Jason Glover <br>
 Contact: jasonglover@ufl.edu<br>
 Last Updated: 12/6/2023 <br>
 
-#Requirements
+
+# Requirements
 
 This script requires the use of a PySpark cluster. Before running the script, make sure you have set up a PySpark cluster environment.
 
