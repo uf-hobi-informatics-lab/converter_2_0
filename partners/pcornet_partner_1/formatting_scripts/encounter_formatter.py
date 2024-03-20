@@ -25,6 +25,28 @@ args = parser.parse_args()
 input_data_folder = args.data_folder
 
 
+def pcornet_partner_1_discharge_disposition( key):
+    """
+    Discharge disposition lookup table contains 65 choices
+    after discussing with FH all but 638666 and 638667 are
+    considered discharged alive. We are doing a dictionary lookup
+    for the 2 values listed above and if that returns nothing
+    we return alive as the status.
+    """
+    dict_search = {
+        "30000000|638666": "E",
+        "30000000|638667": "E",
+    }
+
+    result = "A"
+
+    if key is not None:
+        # if the key is not mapped we assume discharge status is alive
+        result = dict_search.get(str(key), result)
+
+    return result
+
+pcornet_partner_1_discharge_disposition_udf = udf(pcornet_partner_1_discharge_disposition, StringType())
 
 #Create SparkSession
 spark = cf.get_spark_session("encounter_formatter")
@@ -46,7 +68,7 @@ try:
 
     encounter_table_name       = 'Epic_Encounter_*.txt'
 
-    encounter_in = spark.read.load(input_data_folder_path+encounter_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    encounter_in = spark.read.load(input_data_folder_path+encounter_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
     ###################################################################################################################################
 
@@ -65,10 +87,10 @@ try:
                             encounter_in['facility_location'].alias('FACILITY_LOCATION'),
                             encounter_in['enc_type'].alias('ENC_TYPE'),
                             encounter_in['facilityid'].alias('FACILITYID'),
-                            encounter_in['discharge_disposition'].alias('DISCHARGE_DISPOSITION'),
-                            encounter_in['discharge_status'].alias('DISCHARGE_STATUS'),
+                            pcornet_partner_1_discharge_disposition_udf(encounter_in['raw_discharge_disposition']).alias('DISCHARGE_DISPOSITION'),
+                            encounter_in['raw_discharge_status'].alias('DISCHARGE_STATUS'),
                             encounter_in['drg'].alias('DRG'),
-                            encounter_in['drg_type'].alias('DRG_TYPE'),
+                            encounter_in['raw_drg_type'].alias('DRG_TYPE'),
                             encounter_in['admitting_source'].alias('ADMITTING_SOURCE'),
                             encounter_in['payor_type_primary'].alias('PAYER_TYPE_PRIMARY'),
                             encounter_in['payor_type_secondary'].alias('PAYER_TYPE_SECONDARY'),

@@ -25,6 +25,7 @@ parser.add_argument("-f", "--data_folder")
 args = parser.parse_args()
 input_data_folder = args.data_folder
 
+
 try:
 
     ###################################################################################################################################
@@ -33,21 +34,20 @@ try:
 
     ###################################################################################################################################
 
-
     input_data_folder_path               = f'/data/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
 
 
-    procedure_occurrence_table_name   = 'Procedure_Occurrence.txt'
-    visit_occurrence_table_name       = 'Visit_Occurrence.txt'
+    procedure_occurrence_table_name   = 'procedure_occurrence.csv'
+    visit_occurrence_table_name       = 'visit_occurrence.csv'
 
 
-    procedure_occurrence = spark.read.load(input_data_folder_path+procedure_occurrence_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
-    visit_occurrence = spark.read.load(input_data_folder_path+visit_occurrence_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
+    procedure_occurrence = spark.read.load(input_data_folder_path+procedure_occurrence_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
+    visit_occurrence = spark.read.load(input_data_folder_path+visit_occurrence_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
     visit_occurrence_data = visit_occurrence.collect()
 
-    admit_date_dict = {row["visit_occurrence_id"]: str(row["visit_start_date"].strftime("%Y-%m-%d")) for row in visit_occurrence_data}
+    admit_date_dict = {row["visit_occurrence_id"]: row["visit_start_date"] for row in visit_occurrence_data}
     admit_date_dict_udf = udf(lambda visit_start_date: admit_date_dict.get(visit_start_date, None), StringType())
 
     enc_type_dict = {row["visit_occurrence_id"]: row["visit_type"] for row in visit_occurrence_data}
@@ -63,7 +63,7 @@ try:
 
     ###################################################################################################################################
 
-    procedures = procedure_occurrence.select(       procedure_occurrence['procedure_occurrence_id'].alias("PROCEDURESID"),
+    procedures = procedure_occurrence.select(          procedure_occurrence['procedure_occurrence_id'].alias("PROCEDURESID"),
                                                     procedure_occurrence['person_id'].alias("PATID"),
                                                     procedure_occurrence['visit_occurrence_id'].alias("ENCOUNTERID"),
                                                     enc_type_dict_udf(col('visit_occurrence_id')).alias("ENC_TYPE"),
@@ -105,10 +105,6 @@ except Exception as e:
                             job     = 'procedures_formatter.py' )
 
     cf.print_with_style(str(e), 'danger red')
-
-
-
-
 
 
 

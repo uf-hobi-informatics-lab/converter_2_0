@@ -17,8 +17,10 @@ import argparse
 
 cf = CommonFuncitons('omop_partner_1')
 
+
 #Create SparkSession
 spark = cf.get_spark_session("obs_clin_formatter")
+
 
 
 parser = argparse.ArgumentParser()
@@ -28,8 +30,16 @@ input_data_folder = args.data_folder
 
 
 
-try:
-    
+def get_time_from_datetime_omop_partner_1(datetime_str):
+        if datetime_str == None or datetime_str =='':
+            return None
+
+        return datetime_str[11:16]
+
+get_time_from_datetime_omop_partner_1_udf = udf(get_time_from_datetime_omop_partner_1, StringType())
+
+
+try: 
 
 
     ###################################################################################################################################
@@ -37,18 +47,17 @@ try:
     # Loading the observation table to be converted to the obs_clin table
 
     ###################################################################################################################################
-    
+
     input_data_folder_path               = f'/data/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
 
 
+    observation_table_name   = 'observation.csv'
 
-    observation_table_name   = 'Observation.txt'
+    observation = spark.read.load(input_data_folder_path+observation_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
-    observation = spark.read.load(input_data_folder_path+observation_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
-
-    filter_values = ["Observation from Measurement", "Observation from measurement"] # Only rows where observation_data_origin is in this list will convert to obsclin
-    filtered_observation = observation.filter(col("observation_data_origin").isin(filter_values))
+    filter_values = ["LOINC"] # Only rows where observation_data_origin is in this list will convert to obsclin
+    filtered_observation = observation.filter(col("observation_code_type").isin(filter_values))
 
 
 
@@ -59,17 +68,17 @@ try:
     ###################################################################################################################################
 
     #Converting the fileds to PCORNet obs_clin Format
-
+ 
     ###################################################################################################################################
 
-    obs_clin = filtered_observation.select(         filtered_observation['observation_id'].alias("OBSCLINID"),
+    obs_clin = filtered_observation.select(            filtered_observation['observation_id'].alias("OBSCLINID"),
                                                     filtered_observation['person_id'].alias("PATID"),
                                                     filtered_observation['visit_occurrence_id'].alias("ENCOUNTERID"),
                                                     filtered_observation['provider_id'].alias("OBSCLIN_PROVIDERID"),
-                                                    filtered_observation['observation_date'].alias("OBSCLIN_START_DATE"),
-                                                    cf.get_time_from_datetime_udf(filtered_observation['observation_datetime']).alias("OBSCLIN_START_TIME"),
-                                                    lit('').alias("OBSCLIN_STOP_DATE"),
-                                                    lit('').alias("OBSCLIN_STOP_TIME"),
+                                                    filtered_observation['observation_start_date'].alias("OBSCLIN_START_DATE"),
+                                                    get_time_from_datetime_omop_partner_1_udf(filtered_observation['observation_start_datetime']).alias("OBSCLIN_START_TIME"),
+                                                    filtered_observation['observation_end_date'].alias("OBSCLIN_STOP_DATE"),
+                                                    get_time_from_datetime_omop_partner_1_udf(filtered_observation['observation_end_datetime']).alias("OBSCLIN_STOP_TIME"),
                                                     filtered_observation['observation_code_type'].alias("OBSCLIN_TYPE"),
                                                     filtered_observation['observation_code'].alias("OBSCLIN_CODE"),
                                                     filtered_observation['qualifier'].alias("OBSCLIN_RESULT_QUAL"),
@@ -79,7 +88,7 @@ try:
                                                     filtered_observation['qualifier'].alias("OBSCLIN_RESULT_MODIFIER"),
                                                     filtered_observation['unit'].alias("OBSCLIN_RESULT_UNIT"),
                                                     filtered_observation['observation_data_origin'].alias("OBSCLIN_SOURCE"),
-                                                    lit('').alias("OBSCLIN_ABN_IND"),
+                                                    filtered_observation['abn_ind'].alias("OBSCLIN_ABN_IND"),
                                                     filtered_observation['observation_code'].alias("RAW_OBSCLIN_NAME"),
                                                     filtered_observation['observation_code'].alias("RAW_OBSCLIN_CODE"),
                                                     filtered_observation['observation_code_type'].alias("RAW_OBSCLIN_TYPE"),
@@ -116,7 +125,6 @@ except Exception as e:
                             job     = 'obs_clin_formatter.py' )
 
     cf.print_with_style(str(e), 'danger red')
-
 
 
 

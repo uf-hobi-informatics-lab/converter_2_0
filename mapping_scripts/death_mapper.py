@@ -29,6 +29,8 @@ args = parser.parse_args()
 input_partner = args.partner.lower()
 input_data_folder = args.data_folder
 
+input_data_folder = args.data_folder
+
 
 cf =CommonFuncitons(input_partner)
 
@@ -58,8 +60,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -69,7 +71,8 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_death = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_death.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
+        unmapped_death    = cf.spark_read(formatted_data_folder_path+"formatted_death.csv", spark)
+
 
 
 
@@ -91,10 +94,10 @@ try:
         death = unmapped_death.select(              
             
                                     cf.encrypt_id_udf(unmapped_death['PATID']).alias("PATID"),
-                                    cf.get_date_from_datetime_udf(unmapped_death['DEATH_DATE']).alias("DEATH_DATE"),
-                                    mapping_death_date_impute_dict[upper(col('DEATH_DATE_IMPUTE'))].alias("DEATH_DATE_IMPUTE"),
-                                    mapping_death_source_dict[upper(col('DEATH_SOURCE'))].alias("DEATH_SOURCE"),
-                                    mapping_death_match_confidence_dict[upper(col('DEATH_MATCH_CONFIDENCE'))].alias("DEATH_MATCH_CONFIDENCE"),
+                                    unmapped_death['DEATH_DATE'].alias("DEATH_DATE"),
+                                    coalesce(mapping_death_date_impute_dict[upper(col('DEATH_DATE_IMPUTE'))],col('DEATH_DATE_IMPUTE')).alias("DEATH_DATE_IMPUTE"),
+                                    coalesce(mapping_death_source_dict[upper(col('DEATH_SOURCE'))],col('DEATH_SOURCE')).alias("DEATH_SOURCE"),
+                                    coalesce(mapping_death_match_confidence_dict[upper(col('DEATH_MATCH_CONFIDENCE'))],col('DEATH_MATCH_CONFIDENCE')).alias("DEATH_MATCH_CONFIDENCE"),
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),
                                     unmapped_death['PATID'].alias("JOIN_FIELD"),
@@ -121,6 +124,7 @@ try:
 
         spark.stop()
 
+    spark.stop()
 
 except Exception as e:
 

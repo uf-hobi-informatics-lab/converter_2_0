@@ -58,8 +58,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -68,8 +68,8 @@ try:
     # Loading the unmapped enctounter table
     ###################################################################################################################################
 
-        unmapped_lds_address_hx = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_lds_address_hx.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
 
+        unmapped_lds_address_hx    = cf.spark_read(formatted_data_folder_path+"formatted_lds_address_hx.csv", spark)
 
 
     ###################################################################################################################################
@@ -77,7 +77,8 @@ try:
     ###################################################################################################################################
         mapping_address_use_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lds_address_hx_address_use_dict.items())])
         mapping_address_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lds_address_hx_address_type_dict.items())])
-        
+        mapping_address_preferred_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lds_address_hx_address_preferred_dict.items())])
+
 
 
     ###################################################################################################################################
@@ -89,16 +90,16 @@ try:
             
                                     cf.encrypt_id_udf(unmapped_lds_address_hx['ADDRESSID']).alias("ADDRESSID"),
                                     cf.encrypt_id_udf(unmapped_lds_address_hx['PATID']).alias("PATID"),
-                                    mapping_address_use_dict[upper(col('ADDRESS_USE'))].alias("ADDRESS_USE"),
-                                    mapping_address_type_dict[upper(col('ADDRESS_TYPE'))].alias("ADDRESS_TYPE"),
-                                    unmapped_lds_address_hx['ADDRESS_PREFERRED'].alias('ADDRESS_PREFERRED'),
+                                    coalesce(mapping_address_use_dict[upper(col('ADDRESS_USE'))],col('ADDRESS_USE')).alias("ADDRESS_USE"),
+                                    coalesce(mapping_address_type_dict[upper(col('ADDRESS_TYPE'))],col('ADDRESS_TYPE')).alias("ADDRESS_TYPE"),
+                                    coalesce(mapping_address_preferred_dict[upper(col('ADDRESS_PREFERRED'))],col('ADDRESS_PREFERRED')).alias("ADDRESS_PREFERRED"),
                                     unmapped_lds_address_hx['ADDRESS_CITY'].alias('ADDRESS_CITY'),
                                     unmapped_lds_address_hx['ADDRESS_STATE'].alias('ADDRESS_STATE'),
                                     unmapped_lds_address_hx['ADDRESS_COUNTY'].alias('ADDRESS_COUNTY'),
                                     unmapped_lds_address_hx['ADDRESS_ZIP5'].alias('ADDRESS_ZIP5'),
                                     unmapped_lds_address_hx['ADDRESS_ZIP9'].alias('ADDRESS_ZIP9'),
-                                    cf.get_date_from_datetime_udf(unmapped_lds_address_hx['ADDRESS_PERIOD_START']).alias("ADDRESS_PERIOD_START"),
-                                    cf.get_date_from_datetime_udf(unmapped_lds_address_hx['ADDRESS_PERIOD_END']).alias("ADDRESS_PERIOD_END"),                             
+                                    unmapped_lds_address_hx['ADDRESS_PERIOD_START'].alias("ADDRESS_PERIOD_START"),
+                                    unmapped_lds_address_hx['ADDRESS_PERIOD_END'].alias("ADDRESS_PERIOD_END"),                             
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),
                                     unmapped_lds_address_hx['ADDRESSID'].alias("JOIN_FIELD"),

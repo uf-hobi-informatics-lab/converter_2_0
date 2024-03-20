@@ -13,16 +13,19 @@ from pyspark.sql.functions import *
 from commonFunctions import CommonFuncitons
 import argparse
 
+
 cf = CommonFuncitons('omop_partner_1')
-spark = cf.get_spark_session("encounter_formatter")
+
+#Create SparkSession
+spark = cf.get_spark_session("enrollment_formatter")
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--data_folder")
 args = parser.parse_args()
 input_data_folder = args.data_folder
 
-try :
-
+try:
 
     ###################################################################################################################################
 
@@ -31,13 +34,15 @@ try :
 
     ###################################################################################################################################
 
+
     input_data_folder_path               = f'/data/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
 
 
-    obsrevation_period_table_name       = 'Observation_Period.txt'
 
-    obsrevation_period = spark.read.load(input_data_folder_path+obsrevation_period_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
+    obsrevation_period_table_name       = 'observation_period.csv'
+
+    obsrevation_period = spark.read.load(input_data_folder_path+obsrevation_period_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
 
 
@@ -48,9 +53,9 @@ try :
 
     ###################################################################################################################################
 
-    enrollment = obsrevation_period.select(         obsrevation_period['person_id'].alias("PATID"),
-                                                    obsrevation_period['observation_period_start_date'].alias("ENR_START_DATE"),
-                                                    obsrevation_period['observation_period_end_date'].alias("ENR_END_DATE"),
+    enrollment = obsrevation_period.select(            obsrevation_period['person_id'].alias("PATID"),
+                                                    cf.get_date_from_datetime_udf(obsrevation_period['observation_period_start_date']).alias("ENR_START_DATE"),
+                                                    cf.get_date_from_datetime_udf(obsrevation_period['observation_period_end_date']).alias("ENR_END_DATE"),
                                                     obsrevation_period['chart'].alias("CHART"),
                                                     obsrevation_period['enrollment_basis'].alias("ENR_BASIS"),
                                                     
@@ -69,7 +74,9 @@ try :
 
     spark.stop()
 
-    
+
+
+
 except Exception as e:
 
     spark.stop()

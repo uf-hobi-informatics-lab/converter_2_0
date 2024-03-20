@@ -1,5 +1,5 @@
 ###################################################################################################################################
-# This script will map a PCORNet condition table 
+# This script will map a PCORNet death table 
 ###################################################################################################################################
 
  
@@ -29,14 +29,10 @@ args = parser.parse_args()
 input_partner = args.partner.lower()
 input_data_folder = args.data_folder
 
-input_data_folder = args.data_folder
-
 
 cf =CommonFuncitons(input_partner)
 
-# spin the pyspak cluster and
-spark = cf.get_spark_session("condition_mapper")
-
+spark = cf.get_spark_session("death_cause_mapper")
 
 try:
 
@@ -57,7 +53,7 @@ try:
     ###################################################################################################################################
     # Load the config file for the selected parnter
     ###################################################################################################################################
-
+     
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
@@ -68,20 +64,22 @@ try:
 
 
     ###################################################################################################################################
+    # spin the pyspak cluster and
     # Loading the unmapped enctounter table
     ###################################################################################################################################
 
 
-        unmapped_condition    = cf.spark_read(formatted_data_folder_path+"formatted_condition.csv", spark)
 
+        unmapped_death_cause    = cf.spark_read(formatted_data_folder_path+"formatted_death_cause.csv", spark)
 
 
     ###################################################################################################################################
     # create the mapping from the dictionaries
     ###################################################################################################################################
-        mapping_condition_status_dict = create_map([lit(x) for x in chain(*partner_dictionaries.condition_condition_status_dict.items())])
-        mapping_condition_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.condition_condition_type_dict.items())])
-        mapping_condition_source_dict = create_map([lit(x) for x in chain(*partner_dictionaries.condition_condition_source_dict.items())])
+        mapping_death_cause_code_dict = create_map([lit(x) for x in chain(*partner_dictionaries.death_cause_death_cause_code_dict.items())])
+        mapping_death_cause_source_dict = create_map([lit(x) for x in chain(*partner_dictionaries.death_cause_death_cause_source_dict.items())])
+        mapping_death_cause_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.death_cause_death_cause_type_dict.items())])
+        mapping_death_cause_match_confidence_dict = create_map([lit(x) for x in chain(*partner_dictionaries.death_cause_death_cause_match_confidence_dict.items())])
 
 
 
@@ -90,45 +88,41 @@ try:
     ###################################################################################################################################
 
 
-        condition = unmapped_condition.select(              
+        death_cause = unmapped_death_cause.select(              
             
-            
-                                    cf.encrypt_id_udf(unmapped_condition['CONDITIONID']).alias("CONDITIONID"),
-                                    cf.encrypt_id_udf(unmapped_condition['PATID']).alias("PATID"),
-                                    cf.encrypt_id_udf(unmapped_condition['ENCOUNTERID']).alias("ENCOUNTERID"),
-                                    unmapped_condition['REPORT_DATE'].alias("REPORT_DATE"),
-                                    unmapped_condition['RESOLVE_DATE'].alias("RESOLVE_DATE"),
-                                    unmapped_condition['ONSET_DATE'].alias("ONSET_DATE"),
-                                    coalesce(mapping_condition_status_dict[upper(col("CONDITION_STATUS"))],col('CONDITION_STATUS')).alias("CONDITION_STATUS"),
-                                    unmapped_condition['CONDITION'].alias("CONDITION"),
-                                    coalesce(mapping_condition_type_dict[upper(col("CONDITION_TYPE"))],col('CONDITION_TYPE')).alias("CONDITION_TYPE"),
-                                    coalesce(mapping_condition_source_dict[upper(col("CONDITION_SOURCE"))],col('CONDITION_SOURCE')).alias("CONDITION_SOURCE"),
-                                    unmapped_condition['RAW_CONDITION_STATUS'].alias("RAW_CONDITION_STATUS"),
-                                    unmapped_condition['RAW_CONDITION'].alias("RAW_CONDITION"),
-                                    unmapped_condition['RAW_CONDITION_TYPE'].alias("RAW_CONDITION_TYPE"),
-                                    unmapped_condition['RAW_CONDITION_SOURCE'].alias("RAW_CONDITION_SOURCE"),
+                                    cf.encrypt_id_udf(unmapped_death_cause['PATID']).alias("PATID"),
+                                    unmapped_death_cause['DEATH_CAUSE'].alias("DEATH_CAUSE"),
+                                    coalesce(mapping_death_cause_code_dict[upper(col('DEATH_CAUSE_CODE'))],col('DEATH_CAUSE_CODE')).alias("DEATH_CAUSE_CODE"),
+                                    coalesce(mapping_death_cause_type_dict[upper(col('DEATH_CAUSE_TYPE'))],col('DEATH_CAUSE_TYPE')).alias("DEATH_CAUSE_TYPE"),
+                                    coalesce(mapping_death_cause_source_dict[upper(col('DEATH_CAUSE_SOURCE'))],col('DEATH_CAUSE_SOURCE')).alias("DEATH_CAUSE_SOURCE"),
+                                    coalesce(mapping_death_cause_match_confidence_dict[upper(col('DEATH_CAUSE_CONFIDENCE'))],col('DEATH_CAUSE_CONFIDENCE')).alias("DEATH_CAUSE_CONFIDENCE"),
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),
-                                    unmapped_condition['CONDITIONID'].alias("JOIN_FIELD"),
+                                    unmapped_death_cause['PATID'].alias("JOIN_FIELD"),
+
+
                                                             )
 
     ###################################################################################################################################
     # Create the output file
     ###################################################################################################################################
-        condition_with_additional_fileds = cf.append_additional_fields(
-            mapped_df = condition,
-            file_name = "formatted_condition.csv",
+
+
+        death_cause_with_additional_fileds = cf.append_additional_fields(
+            mapped_df = death_cause,
+            file_name = "formatted_death_cause.csv",
             formatted_data_folder_path = formatted_data_folder_path,
-            join_field = "CONDITIONID",
+            join_field = "PATID",
             spark = spark)
+ 
 
         cf.write_pyspark_output_file(
-                        payspark_df = condition_with_additional_fileds,
-                        output_file_name = "mapped_condition.csv",
+                        payspark_df = death_cause_with_additional_fileds,
+                        output_file_name = "mapped_death_cause.csv",
                         output_data_folder_path= mapped_data_folder_path)
 
-
         spark.stop()
+
 
 except Exception as e:
 
@@ -136,6 +130,6 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'condition_mapper.py' )
+                            job     = 'death_cause_mapper.py' )
 
     cf.print_with_style(str(e), 'danger red')

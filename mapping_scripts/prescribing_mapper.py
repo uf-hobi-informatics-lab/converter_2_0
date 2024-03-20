@@ -58,8 +58,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -69,9 +69,8 @@ try:
     ###################################################################################################################################
 
 
-
-        unmapped_prescribing = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_prescribing.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
     
+        unmapped_prescribing    = cf.spark_read(formatted_data_folder_path+"formatted_prescribing.csv", spark)
 
 
     ###################################################################################################################################
@@ -83,6 +82,7 @@ try:
         mapping_rx_route_dict = create_map([lit(x) for x in chain(*partner_dictionaries.prescribing_rx_route_dict.items())])
         mapping_rx_basis_dict = create_map([lit(x) for x in chain(*partner_dictionaries.prescribing_rx_basis_dict.items())])
         mapping_rx_source_dict = create_map([lit(x) for x in chain(*partner_dictionaries.prescribing_rx_source_dict.items())])
+        mapping_rx_frequency_dict = create_map([lit(x) for x in chain(*partner_dictionaries.prescribing_rx_frequency_dict.items())])
 
 
 
@@ -100,23 +100,23 @@ try:
                                     cf.encrypt_id_udf(unmapped_prescribing['PRESCRIBINGID']).alias("PRESCRIBINGID"),
                                     cf.encrypt_id_udf(unmapped_prescribing['PATID']).alias("PATID"),
                                     cf.encrypt_id_udf(unmapped_prescribing['ENCOUNTERID']).alias("ENCOUNTERID"),
-                                    cf.encrypt_id_udf(unmapped_prescribing['RX_PROVIDERID']).alias("RX_PROVIDERID"),
-                                    cf.get_date_from_datetime_udf(unmapped_prescribing['RX_ORDER_DATE']).alias("RX_ORDER_DATE"),
-                                    cf.get_time_from_datetime_udf(unmapped_prescribing['RX_ORDER_TIME']).alias("RX_ORDER_TIME"),
-                                    cf.get_date_from_datetime_udf(unmapped_prescribing['RX_START_DATE']).alias("RX_START_DATE"),
-                                    cf.get_time_from_datetime_udf(unmapped_prescribing['RX_END_DATE']).alias("RX_END_DATE"),
+                                    cf.encrypt_id_udf(unmapped_prescribing['RX_PROVIDERID']).alias("RX_PROVIDERID"),                             
+                                    unmapped_prescribing['RX_ORDER_DATE'].alias("RX_ORDER_DATE"),
+                                    unmapped_prescribing['RX_ORDER_TIME'].alias("RX_ORDER_TIME"),                              
+                                    unmapped_prescribing['RX_START_DATE'].alias("RX_START_DATE"),
+                                    unmapped_prescribing['RX_END_DATE'].alias("RX_END_DATE"), 
                                     unmapped_prescribing['RX_DOSE_ORDERED'].alias("RX_DOSE_ORDERED"),
-                                    mapping_rx_dose_ordered_unit_dict[upper(col("RX_DOSE_ORDERED_UNIT"))].alias("RX_DOSE_ORDERED_UNIT"),
+                                    coalesce(mapping_rx_dose_ordered_unit_dict[col("RX_DOSE_ORDERED_UNIT")], col("RX_DOSE_ORDERED_UNIT")).alias("RX_DOSE_ORDERED_UNIT"),
                                     unmapped_prescribing['RX_QUANTITY'].alias("RX_QUANTITY"),
-                                    mapping_rx_dose_form_dict[upper(col("RX_DOSE_FORM"))].alias("RX_DOSE_FORM"),
+                                    coalesce(mapping_rx_dose_form_dict[upper(col("RX_DOSE_FORM"))],col('RX_DOSE_FORM')).alias("RX_DOSE_FORM"),
                                     unmapped_prescribing['RX_REFILLS'].alias("RX_REFILLS"),
                                     unmapped_prescribing['RX_DAYS_SUPPLY'].alias("RX_DAYS_SUPPLY"),
-                                    unmapped_prescribing['RX_FREQUENCY'].alias("RX_FREQUENCY"),
-                                    mapping_rx_prn_flag_dict[upper(col("RX_PRN_FLAG"))].alias("RX_PRN_FLAG"),
-                                    mapping_rx_route_dict[upper(col("RX_ROUTE"))].alias("RX_ROUTE"),
-                                    mapping_rx_basis_dict[upper(col("RX_BASIS"))].alias("RX_BASIS"),
+                                    coalesce(mapping_rx_frequency_dict[upper(col("RX_FREQUENCY"))],col('RX_FREQUENCY')).alias("RX_FREQUENCY"),
+                                    coalesce(mapping_rx_prn_flag_dict[upper(col("RX_PRN_FLAG"))],col('RX_PRN_FLAG')).alias("RX_PRN_FLAG"),
+                                    coalesce(mapping_rx_route_dict[upper(col("RX_ROUTE"))],col('RX_ROUTE')).alias("RX_ROUTE"),
+                                    coalesce(mapping_rx_basis_dict[upper(col("RX_BASIS"))],col('RX_BASIS')).alias("RX_BASIS"),
                                     unmapped_prescribing['RXNORM_CUI'].alias("RXNORM_CUI"),
-                                    mapping_rx_source_dict[upper(col("RX_SOURCE"))].alias("RX_SOURCE"),
+                                    coalesce(mapping_rx_source_dict[upper(col("RX_SOURCE"))],col('RX_SOURCE')).alias("RX_SOURCE"),
                                     unmapped_prescribing['RX_DISPENSE_AS_WRITTEN'].alias("RX_DISPENSE_AS_WRITTEN"),
                                     unmapped_prescribing['RAW_RX_MED_NAME'].alias("RAW_RX_MED_NAME"),
                                     unmapped_prescribing['RAW_RX_FREQUENCY'].alias("RAW_RX_FREQUENCY"),

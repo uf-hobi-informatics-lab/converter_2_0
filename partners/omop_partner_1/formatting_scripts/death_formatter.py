@@ -19,6 +19,8 @@ cf =CommonFuncitons('omop_partner_1')
 #Create SparkSession
 spark = cf.get_spark_session("death_formatter")
 
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--data_folder")
 args = parser.parse_args()
@@ -27,6 +29,7 @@ input_data_folder = args.data_folder
 
 try:
 
+
     ###################################################################################################################################
 
     # Loading the omop_death table to be converted to the pcornet_death table
@@ -34,13 +37,14 @@ try:
 
     ###################################################################################################################################
 
+
     input_data_folder_path               = f'/data/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
 
 
-    omop_death_table_name       = 'Death.txt'
+    omop_death_table_name       = 'death.csv'
 
-    omop_death = spark.read.load(input_data_folder_path+omop_death_table_name,format="csv", sep=",", inferSchema="true", header="true", quote= '"')
+    omop_death = spark.read.load(input_data_folder_path+omop_death_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
 
 
@@ -53,8 +57,8 @@ try:
 
     pcornet_death = omop_death.select(              omop_death['person_id'].alias("PATID"),
                                                     omop_death['death_date'].alias("DEATH_DATE"),
-                                                    omop_death['death_date_input'].alias("DEATH_DATE_IMPUTE"),
-                                                    lit("").alias("DEATH_SOURCE"),
+                                                    lit('OT').alias("DEATH_DATE_IMPUTE"),
+                                                    lit("L").alias("DEATH_SOURCE"),
                                                     lit("").alias("DEATH_MATCH_CONFIDENCE"),
                                                     
                                                         )
@@ -76,6 +80,7 @@ try:
 
 
 
+
 except Exception as e:
 
     spark.stop()
@@ -85,8 +90,6 @@ except Exception as e:
                             job     = 'death_formatter.py' )
 
     cf.print_with_style(str(e), 'danger red')
-
-
 
 
 

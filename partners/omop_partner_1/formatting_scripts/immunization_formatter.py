@@ -1,6 +1,6 @@
 ###################################################################################################################################
 
-# This script will convert an OMOP drug_exposure table to a PCORnet format as the prescribing table
+# This script will convert an OMOP drug_exposure table to a PCORnet format as the immunization table
 
 ###################################################################################################################################
 
@@ -17,7 +17,7 @@ import argparse
 cf = CommonFuncitons('omop_partner_1')
 
 #Create SparkSession
-spark = cf.get_spark_session("prescribing_formatter")
+spark = cf.get_spark_session("immunization_formatter")
 
 
 parser = argparse.ArgumentParser()
@@ -31,7 +31,7 @@ try:
 
     ###################################################################################################################################
 
-    # Loading the drug_exposure table to be converted to the prescribing table
+    # Loading the drug_exposure table to be converted to the immunization table
 
     ###################################################################################################################################
 
@@ -74,11 +74,11 @@ try:
 
     ###################################################################################################################################
 
-    #Converting the fields to PCORNet prescribing Format
+    #Converting the fields to PCORNet immunization Format
 
     ###################################################################################################################################
 
-    prescribing = filtered_drug_exposure.select(    filtered_drug_exposure['drug_exposure_id'].alias("PRESCRIBINGID"),
+    immunization = filtered_drug_exposure.select(    filtered_drug_exposure['drug_exposure_id'].alias("immunizationID"),
                                                     filtered_drug_exposure['person_id'].alias("PATID"),
                                                     filtered_drug_exposure['visit_occurrence_id'].alias("ENCOUNTERID"),
                                                     filtered_drug_exposure['provider_id'].alias("RX_PROVIDERID"),
@@ -121,8 +121,8 @@ try:
     ###################################################################################################################################
 
     cf.write_pyspark_output_file(
-                        payspark_df = prescribing,
-                        output_file_name = "formatted_prescribing.csv",
+                        payspark_df = immunization,
+                        output_file_name = "formatted_immunization.csv",
                         output_data_folder_path= formatter_output_data_folder_path)
 
     spark.stop()
@@ -135,7 +135,7 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = 'omop_partner_1',
-                            job     = 'prescribing_formatter.py' )
+                            job     = 'immunization_formatter.py' )
 
     cf.print_with_style(str(e), 'danger red')
 

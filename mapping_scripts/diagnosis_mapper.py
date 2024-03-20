@@ -57,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -67,8 +67,7 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_diagnosis = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_diagnosis.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
-
+        unmapped_diagnosis    = cf.spark_read(formatted_data_folder_path+"formatted_diagnosis.csv", spark)
 
 
     ###################################################################################################################################
@@ -97,16 +96,16 @@ try:
                                     cf.encrypt_id_udf(unmapped_diagnosis['DIAGNOSISID']).alias("DIAGNOSISID"),
                                     cf.encrypt_id_udf(unmapped_diagnosis['PATID']).alias("PATID"),
                                     cf.encrypt_id_udf(unmapped_diagnosis['ENCOUNTERID']).alias("ENCOUNTERID"),
-                                    mapping_diagnosis_enc_type_dict[upper(col("ENC_TYPE"))].alias("ENC_TYPE"),
-                                    cf.get_date_from_datetime_udf(unmapped_diagnosis['ADMIT_DATE']).alias("ADMIT_DATE"),
+                                    coalesce(mapping_diagnosis_enc_type_dict[upper(col("ENC_TYPE"))],col('ENC_TYPE')).alias("ENC_TYPE"),
+                                    unmapped_diagnosis['ADMIT_DATE'].alias("ADMIT_DATE"),
                                     cf.encrypt_id_udf(unmapped_diagnosis['PROVIDERID']).alias("PROVIDERID"),
                                     unmapped_diagnosis['DX'].alias("DX"),
-                                    mapping_dx_type_dict[upper(col("DX_TYPE"))].alias("DX_TYPE"),
-                                    cf.get_date_from_datetime_udf(unmapped_diagnosis['DX_DATE']).alias("DX_DATE"),
-                                    mapping_dx_source_dict[upper(col("DX_SOURCE"))].alias("DX_SOURCE"),
-                                    mapping_dx_origin_dict[upper(col("DX_ORIGIN"))].alias("DX_ORIGIN"),
-                                    mapping_pdx_dict[upper(col("PDX"))].alias("PDX"),
-                                    mapping_dx_poa_dict[upper(col("DX_POA"))].alias("DX_POA"),
+                                    coalesce(mapping_dx_type_dict[upper(col("DX_TYPE"))],col('DX_TYPE')).alias("DX_TYPE"),
+                                    unmapped_diagnosis['DX_DATE'].alias("DX_DATE"),
+                                    coalesce(mapping_dx_source_dict[upper(col("DX_SOURCE"))],col('DX_SOURCE')).alias("DX_SOURCE"),
+                                    coalesce(mapping_dx_origin_dict[upper(col("DX_ORIGIN"))],col('DX_ORIGIN')).alias("DX_ORIGIN"),
+                                    coalesce(mapping_pdx_dict[upper(col("PDX"))],col('PDX')).alias("PDX"),
+                                    coalesce(mapping_dx_poa_dict[upper(col("DX_POA"))],col('DX_POA')).alias("DX_POA"),
                                     unmapped_diagnosis['RAW_DX'].alias("RAW_DX"),
                                     unmapped_diagnosis['RAW_DX_TYPE'].alias("RAW_DX_TYPE"),
                                     unmapped_diagnosis['RAW_DX_SOURCE'].alias("RAW_DX_SOURCE"),

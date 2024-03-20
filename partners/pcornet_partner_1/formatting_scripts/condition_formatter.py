@@ -37,7 +37,7 @@ try:
 
     condition_table_name   = 'Epic_Condition_*.txt'
 
-    condition_in = spark.read.load(input_data_folder_path+condition_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    condition_in = spark.read.load(input_data_folder_path+condition_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
 
 
@@ -66,13 +66,13 @@ try:
                             cf.format_date_udf(condition_in['resolve_date']).alias('RESOLVE_DATE'),
                             cf.format_date_udf(condition_in['onset_date']).alias('ONSET_DATE'),
                             condition_in['condition_status'].alias('CONDITION_STATUS'),
-                            condition_in['condition'].alias('CONDITION'),
+                            condition_in['raw_condition'].alias('CONDITION'),
                             condition_in['condition_type'].alias('CONDITION_TYPE'),
                             condition_in['condition_source'].alias('CONDITION_SOURCE'),
                             condition_in['raw_condition_status'].alias('RAW_CONDITION_STATUS'),
                             condition_in['raw_condition_type'].alias('RAW_CONDITION_TYPE'),
-                            condition_in['raw_condition_source'].alias('RAW_CONDITION_SOURCE')
-
+                            condition_in['raw_condition_source'].alias('RAW_CONDITION_SOURCE'),
+                            condition_in['raw_condition'].alias('RAW_CONDITION'),
 
     )
 

@@ -19,14 +19,14 @@ cf = CommonFuncitons('omop_partner_1')
 #Create SparkSession
 spark = cf.get_spark_session("pcornet_provider_formatter")
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--data_folder")
 args = parser.parse_args()
 input_data_folder = args.data_folder
 
-try :
 
-
+try:
 
 
     ###################################################################################################################################
@@ -36,14 +36,13 @@ try :
 
     ###################################################################################################################################
 
-
     input_data_folder_path               = f'/data/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
 
 
-    omop_provider_table_name       = 'Providers.txt'
+    omop_provider_table_name       = 'provider.csv'
 
-    omop_provider = spark.read.load(input_data_folder_path+omop_provider_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
+    omop_provider = spark.read.load(input_data_folder_path+omop_provider_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
     ###################################################################################################################################
 
@@ -104,6 +103,7 @@ except Exception as e:
                             job     = 'provider_formatter.py' )
 
     cf.print_with_style(str(e), 'danger red')
+
 
 
 

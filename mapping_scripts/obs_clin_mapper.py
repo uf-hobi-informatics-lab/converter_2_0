@@ -57,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -68,19 +68,18 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_obs_clin = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_obs_clin.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
-
+        unmapped_obs_clin    = cf.spark_read(formatted_data_folder_path+"formatted_obs_clin.csv", spark)
 
 
     ###################################################################################################################################
     # create the mapping from the dictionaries
     ###################################################################################################################################
         mapping_obsclin_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.obs_clin_obsclin_type_dict.items())])
-        mapping_obsclin_result_qual_dict = create_map([lit(x) for x in chain(*partner_dictionaries.obs_clin_result_qual_dict.items())])
-        mapping_obsclin_result_modifier_dict = create_map([lit(x) for x in chain(*partner_dictionaries.obs_clin_result_modifier_dict.items())])
-        mapping_obsclin_result_unit_dict = create_map([lit(x) for x in chain(*partner_dictionaries.obs_clin_result_unit_dict.items())])
+        mapping_obsclin_result_qual_dict = create_map([lit(x) for x in chain(*partner_dictionaries.obs_clin_obsclin_result_qual_dict.items())])
+        mapping_obsclin_result_modifier_dict = create_map([lit(x) for x in chain(*partner_dictionaries.obs_clin_obsclin_result_modifier_dict.items())])
+        mapping_obsclin_result_unit_dict = create_map([lit(x) for x in chain(*partner_dictionaries.obs_clin_obsclin_result_unit_dict.items())])
         mapping_obsclin_source_dict = create_map([lit(x) for x in chain(*partner_dictionaries.obs_clin_obsclin_source_dict.items())])
-        mapping_obsclin_abn_ind_dict = create_map([lit(x) for x in chain(*partner_dictionaries.obs_clin_abn_ind_dict.items())])
+        mapping_obsclin_abn_ind_dict = create_map([lit(x) for x in chain(*partner_dictionaries.obs_clin_obsclin_abn_ind_dict.items())])
 
 
 
@@ -97,20 +96,20 @@ try:
                                     cf.encrypt_id_udf(unmapped_obs_clin['PATID']).alias("PATID"),
                                     cf.encrypt_id_udf(unmapped_obs_clin['ENCOUNTERID']).alias("ENCOUNTERID"),
                                     cf.encrypt_id_udf(unmapped_obs_clin['OBSCLIN_PROVIDERID']).alias("OBSCLIN_PROVIDERID"),
-                                    cf.get_date_from_datetime_udf(unmapped_obs_clin['OBSCLIN_START_DATE']).alias("OBSCLIN_START_DATE"),
-                                    cf.get_time_from_datetime_udf(unmapped_obs_clin['OBSCLIN_START_TIME']).alias("OBSCLIN_START_TIME"),
-                                    cf.get_date_from_datetime_udf(unmapped_obs_clin['OBSCLIN_STOP_DATE']).alias("OBSCLIN_STOP_DATE"),
-                                    cf.get_time_from_datetime_udf(unmapped_obs_clin['OBSCLIN_STOP_TIME']).alias("OBSCLIN_STOP_TIME"),
-                                    mapping_obsclin_type_dict[upper(col("OBSCLIN_TYPE"))].alias("OBSCLIN_TYPE"),
+                                    unmapped_obs_clin['OBSCLIN_START_DATE'].alias("OBSCLIN_START_DATE"),
+                                    unmapped_obs_clin['OBSCLIN_START_TIME'].alias("OBSCLIN_START_TIME"),
+                                    unmapped_obs_clin['OBSCLIN_STOP_DATE'].alias("OBSCLIN_STOP_DATE"),
+                                    unmapped_obs_clin['OBSCLIN_STOP_TIME'].alias("OBSCLIN_STOP_TIME"),
+                                    coalesce(mapping_obsclin_type_dict[upper(col("OBSCLIN_TYPE"))],col('OBSCLIN_TYPE')).alias("OBSCLIN_TYPE"),
                                     unmapped_obs_clin['OBSCLIN_CODE'].alias("OBSCLIN_CODE"),
-                                    mapping_obsclin_result_qual_dict[upper(col("OBSCLIN_RESULT_QUAL"))].alias("OBSCLIN_RESULT_QUAL"),
+                                    coalesce(mapping_obsclin_result_qual_dict[upper(col("OBSCLIN_RESULT_QUAL"))],col('OBSCLIN_RESULT_QUAL')).alias("OBSCLIN_RESULT_QUAL"),
                                     unmapped_obs_clin['OBSCLIN_RESULT_TEXT'].alias("OBSCLIN_RESULT_TEXT"),
                                     unmapped_obs_clin['OBSCLIN_RESULT_SNOMED'].alias("OBSCLIN_RESULT_SNOMED"),
                                     unmapped_obs_clin['OBSCLIN_RESULT_NUM'].alias("OBSCLIN_RESULT_NUM"),
-                                    mapping_obsclin_result_modifier_dict[upper(col("OBSCLIN_RESULT_MODIFIER"))].alias("OBSCLIN_RESULT_MODIFIER"),
-                                    mapping_obsclin_result_unit_dict[upper(col("OBSCLIN_RESULT_UNIT"))].alias("OBSCLIN_RESULT_UNIT"),
-                                    mapping_obsclin_source_dict[upper(col("OBSCLIN_SOURCE"))].alias("OBSCLIN_SOURCE"),
-                                    mapping_obsclin_abn_ind_dict[upper(col("OBSCLIN_ABN_IND"))].alias("OBSCLIN_ABN_IND"),
+                                    coalesce(mapping_obsclin_result_modifier_dict[upper(col("OBSCLIN_RESULT_MODIFIER"))],col('OBSCLIN_RESULT_MODIFIER')).alias("OBSCLIN_RESULT_MODIFIER"),
+                                    coalesce(mapping_obsclin_result_unit_dict[upper(col("OBSCLIN_RESULT_UNIT"))],col('OBSCLIN_RESULT_UNIT')).alias("OBSCLIN_RESULT_UNIT"),
+                                    coalesce(mapping_obsclin_source_dict[upper(col("OBSCLIN_SOURCE"))],col('OBSCLIN_SOURCE')).alias("OBSCLIN_SOURCE"),
+                                    coalesce(mapping_obsclin_abn_ind_dict[upper(col("OBSCLIN_ABN_IND"))],col('OBSCLIN_ABN_IND')).alias("OBSCLIN_ABN_IND"),
                                     unmapped_obs_clin['RAW_OBSCLIN_NAME'].alias("RAW_OBSCLIN_NAME"),
                                     unmapped_obs_clin['RAW_OBSCLIN_CODE'].alias("RAW_OBSCLIN_CODE"),
                                     unmapped_obs_clin['RAW_OBSCLIN_TYPE'].alias("RAW_OBSCLIN_TYPE"),

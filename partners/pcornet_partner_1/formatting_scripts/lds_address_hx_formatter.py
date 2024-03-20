@@ -34,13 +34,16 @@ try:
     ###################################################################################################################################
 
     input_data_folder_path               = f'/data/{input_data_folder}/'
+    # input_data_folder_path               = f'/app/partners/pcornet_partner_1/data/input/{input_data_folder}/'  
+
+
     formatter_output_data_folder_path    = f'/app/partners/{partner_name.lower()}/data/formatter_output/{input_data_folder}/'
 
 
     lds_address_hx_table_name         = 'Epic_Address_*.txt'
 
 
-    lds_address_hx_in = spark.read.load(input_data_folder_path+lds_address_hx_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    lds_address_hx_in = spark.read.load(input_data_folder_path+lds_address_hx_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
     ###################################################################################################################################
 
@@ -56,10 +59,11 @@ try:
         lds_address_hx_in['address_preferred'].alias('ADDRESS_PREFERRED'),
         lds_address_hx_in['address_city'].alias('ADDRESS_CITY'),
         lds_address_hx_in['address_state'].alias('ADDRESS_STATE'),
+        lds_address_hx_in['ADDRESS_COUNTY'].alias('ADDRESS_COUNTY'),
         lds_address_hx_in['address_zip5'].alias('ADDRESS_ZIP5'),
         lds_address_hx_in['address_zip9'].alias('ADDRESS_ZIP9'),
         cf.format_date_udf(lds_address_hx_in['address_period_start']).alias('ADDRESS_PERIOD_START'),
-        cf.format_date_udf(lds_address_hx_in['adress_period_end']).alias('ADDRESS_PERIOD_END')
+        cf.format_date_udf(lds_address_hx_in['address_period_end']).alias('ADDRESS_PERIOD_END')
     )
 
     ###################################################################################################################################

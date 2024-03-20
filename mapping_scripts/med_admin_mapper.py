@@ -58,8 +58,10 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -69,15 +71,14 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_med_admin = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_med_admin.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
-
+        unmapped_med_admin    = cf.spark_read(formatted_data_folder_path+"formatted_med_admin.csv", spark)
 
 
     ###################################################################################################################################
     # create the mapping from the dictionaries
     ###################################################################################################################################
         mapping_medadmin_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.med_admin_medadmin_type_dict.items())])
-        mapping_medadmin_dose_unit_dict = create_map([lit(x) for x in chain(*partner_dictionaries.med_admin_medadmin_dose_unit_dict.items())])
+        mapping_medadmin_dose_admin_unit_dict = create_map([lit(x) for x in chain(*partner_dictionaries.med_admin_medadmin_dose_admin_unit_dict.items())])
         mapping_medadmin_route_dict = create_map([lit(x) for x in chain(*partner_dictionaries.med_admin_medadmin_route_dict.items())])
         mapping_medadmin_source_dict = create_map([lit(x) for x in chain(*partner_dictionaries.med_admin_medadmin_source_dict.items())])
 
@@ -99,16 +100,16 @@ try:
                                     cf.encrypt_id_udf(unmapped_med_admin['ENCOUNTERID']).alias("ENCOUNTERID"),
                                     unmapped_med_admin['PRESCRIBINGID'].alias("PRESCRIBINGID"),
                                     cf.encrypt_id_udf(unmapped_med_admin['MEDADMIN_PROVIDERID']).alias("MEDADMIN_PROVIDERID"),
-                                    cf.get_date_from_datetime_udf(unmapped_med_admin['MEDADMIN_START_DATE']).alias("MEDADMIN_START_DATE"),
-                                    cf.get_time_from_datetime_udf(unmapped_med_admin['MEDADMIN_START_TIME']).alias("MEDADMIN_START_TIME"),
-                                    cf.get_date_from_datetime_udf(unmapped_med_admin['MEDADMIN_STOP_DATE']).alias("MEDADMIN_STOP_DATE"),
-                                    cf.get_time_from_datetime_udf(unmapped_med_admin['MEDADMIN_STOP_TIME']).alias("MEDADMIN_STOP_TIME"),
-                                    mapping_medadmin_type_dict[upper(col("MEDADMIN_TYPE"))].alias("MEDADMIN_TYPE"),
-                                    unmapped_med_admin['MEDADMIN_CODE'].alias("MEDADMIN_CODE"),
+                                    unmapped_med_admin['MEDADMIN_START_DATE'].alias("MEDADMIN_START_DATE"),
+                                    unmapped_med_admin['MEDADMIN_START_TIME'].alias("MEDADMIN_START_TIME"),
+                                    unmapped_med_admin['MEDADMIN_STOP_DATE'].alias("MEDADMIN_STOP_DATE"),
+                                    unmapped_med_admin['MEDADMIN_STOP_TIME'].alias("MEDADMIN_STOP_TIME"),
+                                    coalesce(mapping_medadmin_type_dict[upper(col("MEDADMIN_TYPE"))],col('MEDADMIN_TYPE')).alias("MEDADMIN_TYPE"),
+                                    unmapped_med_admin['MEDADMIN_CODE'].alias("MEDADMIN_CODE"),                                    
                                     unmapped_med_admin['MEDADMIN_DOSE_ADMIN'].alias("MEDADMIN_DOSE_ADMIN"),
-                                    mapping_medadmin_dose_unit_dict[upper(col("MEDADMIN_DOSE_ADMIN_UNIT"))].alias("MEDADMIN_DOSE_ADMIN_UNIT"),
-                                    mapping_medadmin_route_dict[upper(col("MEDADMIN_ROUTE"))].alias("MEDADMIN_ROUTE"),
-                                    mapping_medadmin_source_dict[upper(col("MEDADMIN_SOURCE"))].alias("MEDADMIN_SOURCE"),
+                                    coalesce(mapping_medadmin_dose_admin_unit_dict[upper(col("MEDADMIN_DOSE_ADMIN_UNIT"))],col('MEDADMIN_DOSE_ADMIN_UNIT')).alias("MEDADMIN_DOSE_ADMIN_UNIT"),
+                                    coalesce(mapping_medadmin_route_dict[upper(col("MEDADMIN_ROUTE"))],col('MEDADMIN_ROUTE')).alias("MEDADMIN_ROUTE"),
+                                    coalesce(mapping_medadmin_source_dict[upper(col("MEDADMIN_SOURCE"))],col('MEDADMIN_SOURCE')).alias("MEDADMIN_SOURCE"),
                                     unmapped_med_admin['RAW_MEDADMIN_MED_NAME'].alias("RAW_MEDADMIN_MED_NAME"),
                                     unmapped_med_admin['RAW_MEDADMIN_CODE'].alias("RAW_MEDADMIN_CODE"),
                                     unmapped_med_admin['RAW_MEDADMIN_DOSE_ADMIN'].alias("RAW_MEDADMIN_DOSE_ADMIN"),

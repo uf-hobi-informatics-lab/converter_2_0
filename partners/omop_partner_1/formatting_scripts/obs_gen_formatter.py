@@ -17,6 +17,7 @@ import argparse
 
 cf = CommonFuncitons('omop_partner_1')
 
+
 #Create SparkSession
 spark = cf.get_spark_session("obs_gen_formatter")
 
@@ -28,6 +29,14 @@ args = parser.parse_args()
 input_data_folder = args.data_folder
 
 
+def get_time_from_datetime_omop_partner_1(datetime_str):
+        if datetime_str == None or datetime_str =='':
+            return None
+
+        return datetime_str[11:16]
+
+get_time_from_datetime_omop_partner_1_udf = udf(get_time_from_datetime_omop_partner_1, StringType())
+
 try:
 
     ###################################################################################################################################
@@ -35,32 +44,31 @@ try:
     # Loading the observation table to be converted to the obs_gen table
 
     ###################################################################################################################################
-
-
+ 
     input_data_folder_path               = f'/data/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
 
 
-    observation_table_name   = 'Observation.txt'
+    observation_table_name   = 'observation.csv'
 
-    observation = spark.read.load(input_data_folder_path+observation_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
+    observation = spark.read.load(input_data_folder_path+observation_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
-    filter_values = ["Observation from Measurement", "Observation from measurement"]# Rows where observation_data_origin is in this list will not convert to obsclin
-    filtered_observation = observation.filter(~col("observation_data_origin").isin(filter_values))
+    filter_values = ["LOINC"]# Rows where observation_data_origin is in this list will not convert to obsclin
+    filtered_observation = observation.filter(~col("observation_code_type").isin(filter_values))
 
 
 
 
     ###################################################################################################################################
 
-    obs_gen = filtered_observation.select(            filtered_observation['observation_id'].alias("OBSGENID"),
+    obs_gen = filtered_observation.select(          filtered_observation['observation_id'].alias("OBSGENID"),
                                                     filtered_observation['person_id'].alias("PATID"),
                                                     filtered_observation['visit_occurrence_id'].alias("ENCOUNTERID"),
                                                     filtered_observation['provider_id'].alias("OBSGEN_PROVIDERID"),
-                                                    filtered_observation['observation_date'].alias("OBSGEN_START_DATE"),
-                                                    cf.get_time_from_datetime_udf(filtered_observation['observation_datetime']).alias("OBSGEN_START_TIME"),
-                                                    lit('').alias("OBSGEN_STOP_DATE"),
-                                                    lit('').alias("OBSGEN_STOP_TIME"),
+                                                    filtered_observation['observation_start_date'].alias("OBSGEN_START_DATE"),
+                                                    get_time_from_datetime_omop_partner_1_udf(filtered_observation['observation_start_datetime']).alias("OBSGEN_START_TIME"),
+                                                    filtered_observation['observation_end_date'].alias("OBSGEN_STOP_DATE"),
+                                                    get_time_from_datetime_omop_partner_1_udf(filtered_observation['observation_end_datetime']).alias("OBSGEN_STOP_TIME"),
                                                     filtered_observation['observation_code_type'].alias("OBSGEN_TYPE"),
                                                     filtered_observation['observation_code'].alias("OBSGEN_CODE"),
                                                     filtered_observation['qualifier'].alias("OBSGEN_RESULT_QUAL"),
@@ -71,7 +79,7 @@ try:
                                                     lit('').alias("OBSGEN_TABLE_MODIFIED"),
                                                     lit('').alias("OBSGEN_ID_MODIFIED"),
                                                     filtered_observation['observation_data_origin'].alias("OBSGEN_SOURCE"),
-                                                    lit('').alias("OBSGEN_ABN_IND"),
+                                                    filtered_observation['abn_ind'].alias("OBSGEN_ABN_IND"),
                                                     filtered_observation['observation_code'].alias("RAW_OBSGEN_NAME"),
                                                     filtered_observation['observation_code'].alias("RAW_OBSGEN_CODE"),
                                                     filtered_observation['observation_code_type'].alias("RAW_OBSGEN_TYPE"),
@@ -98,7 +106,6 @@ try:
     spark.stop()
 
 
-
 except Exception as e:
 
     spark.stop()
@@ -108,6 +115,10 @@ except Exception as e:
                             job     = 'obs_gen_formatter.py' )
 
     cf.print_with_style(str(e), 'danger red')
+
+
+
+
 
 
 

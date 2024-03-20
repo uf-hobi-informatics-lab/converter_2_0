@@ -1,8 +1,8 @@
 ###################################################################################################################################
-# This script will map a PCORNet condition table 
+# This script will map a PCORNet dispensing table 
 ###################################################################################################################################
 
- 
+
 import pyspark
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType
@@ -29,16 +29,13 @@ args = parser.parse_args()
 input_partner = args.partner.lower()
 input_data_folder = args.data_folder
 
-input_data_folder = args.data_folder
-
 
 cf =CommonFuncitons(input_partner)
 
-# spin the pyspak cluster and
-spark = cf.get_spark_session("condition_mapper")
-
 
 try:
+ 
+
 
     ###################################################################################################################################
     # Test if the partner name is valid or not
@@ -55,7 +52,7 @@ try:
 
 
     ###################################################################################################################################
-    # Load the config file for the selected parnter
+    # Load the config file for the selected partner
     ###################################################################################################################################
 
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
@@ -68,67 +65,72 @@ try:
 
 
     ###################################################################################################################################
-    # Loading the unmapped enctounter table
+    # spin the pyspak cluster and
+    # Loading the unmapped dispensing table
     ###################################################################################################################################
 
+        # spark = SparkSession.builder.master("spark://master:7077").appName("dispensing_mapper").getOrCreate()
+        spark = cf.get_spark_session("dispensing_mapper")
 
-        unmapped_condition    = cf.spark_read(formatted_data_folder_path+"formatted_condition.csv", spark)
-
+        unmapped_dispensing = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_dispensing.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
+    
 
 
     ###################################################################################################################################
     # create the mapping from the dictionaries
     ###################################################################################################################################
-        mapping_condition_status_dict = create_map([lit(x) for x in chain(*partner_dictionaries.condition_condition_status_dict.items())])
-        mapping_condition_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.condition_condition_type_dict.items())])
-        mapping_condition_source_dict = create_map([lit(x) for x in chain(*partner_dictionaries.condition_condition_source_dict.items())])
 
-
+        mapping_dispense_source_dict = create_map([lit(x) for x in chain(*partner_dictionaries.dispense_source_dict.items())])
+        mapping_dispense_dose_disp_unit_dict = create_map([lit(x) for x in chain(*partner_dictionaries.dispense_dose_disp_unit_dict.items())])
+        mapping_dispense_route_dict = create_map([lit(x) for x in chain(*partner_dictionaries.dispense_route_dict.items())])
+        
 
     ###################################################################################################################################
-    # Apply the mappings dictionaries and the common function on the fields of the unmmaped encoutner table
+    # Apply the mappings dictionaries and the common function on the fields of the unmmaped dispensing table
     ###################################################################################################################################
 
 
-        condition = unmapped_condition.select(              
+        dispensing = unmapped_dispensing.select(              
             
-            
-                                    cf.encrypt_id_udf(unmapped_condition['CONDITIONID']).alias("CONDITIONID"),
-                                    cf.encrypt_id_udf(unmapped_condition['PATID']).alias("PATID"),
-                                    cf.encrypt_id_udf(unmapped_condition['ENCOUNTERID']).alias("ENCOUNTERID"),
-                                    unmapped_condition['REPORT_DATE'].alias("REPORT_DATE"),
-                                    unmapped_condition['RESOLVE_DATE'].alias("RESOLVE_DATE"),
-                                    unmapped_condition['ONSET_DATE'].alias("ONSET_DATE"),
-                                    coalesce(mapping_condition_status_dict[upper(col("CONDITION_STATUS"))],col('CONDITION_STATUS')).alias("CONDITION_STATUS"),
-                                    unmapped_condition['CONDITION'].alias("CONDITION"),
-                                    coalesce(mapping_condition_type_dict[upper(col("CONDITION_TYPE"))],col('CONDITION_TYPE')).alias("CONDITION_TYPE"),
-                                    coalesce(mapping_condition_source_dict[upper(col("CONDITION_SOURCE"))],col('CONDITION_SOURCE')).alias("CONDITION_SOURCE"),
-                                    unmapped_condition['RAW_CONDITION_STATUS'].alias("RAW_CONDITION_STATUS"),
-                                    unmapped_condition['RAW_CONDITION'].alias("RAW_CONDITION"),
-                                    unmapped_condition['RAW_CONDITION_TYPE'].alias("RAW_CONDITION_TYPE"),
-                                    unmapped_condition['RAW_CONDITION_SOURCE'].alias("RAW_CONDITION_SOURCE"),
+                                    cf.encrypt_id_udf(unmapped_dispensing['DISPENSINGID']).alias("DISPENSINGID"),
+                                    cf.encrypt_id_udf(unmapped_dispensing['PATID']).alias("PATID"),
+                                    cf.encrypt_id_udf(unmapped_dispensing['PRESCRIBINGID']).alias("PRESCRIBINGID"),
+                                    cf.get_date_from_datetime_udf(unmapped_dispensing['DISPENSE_DATE']).alias("DISPENSE_DATE"),
+                                    unmapped_dispensing(lpad(col('NDC'), 11, '0')).alias("NDC"),
+                                    mapping_dispense_source_dict[upper(col("DISPENSE_SOURCE"))].alias("DISPENSE_SOURCE"),
+                                    unmapped_dispensing['DISPENSE_SUP'].alias("DISPENSE_SUP"),
+                                    unmapped_dispensing['DISPENSE_AMT'].alias("DISPENSE_AMT"),
+                                    unmapped_dispensing['DISPENSE_DOSE_DISP'].alias("DISPENSE_DOSE_DISP"),
+                                    mapping_dispense_dose_disp_unit_dict[upper(col("DISPENSE_DOSE_DISP_UNIT"))].alias("DISPENSE_DOSE_DISP_UNIT"),
+                                    mapping_dispense_route_dict[upper(col("DISPENSE_ROUTE"))].alias("DISPENSE_ROUTE"),
+                                    unmapped_dispensing['RAW_NDC'].alias("RAW_NDC"),
+                                    unmapped_dispensing['RAW_DISPENSE_DOSE_DISP'].alias("RAW_DISPENSE_DOSE_DISP"),
+                                    unmapped_dispensing['RAW_DISPENSE_DOSE_DISP_UNIT'].alias("RAW_DISPENSE_DOSE_DISP_UNIT"),
+                                    unmapped_dispensing['RAW_DISPENSE_ROUTE'].alias("RAW_DISPENSE_ROUTE"),
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),
-                                    unmapped_condition['CONDITIONID'].alias("JOIN_FIELD"),
+                                    unmapped_dispensing['DISPENSINGID'].alias("JOIN_FIELD"),
                                                             )
 
     ###################################################################################################################################
     # Create the output file
     ###################################################################################################################################
-        condition_with_additional_fileds = cf.append_additional_fields(
-            mapped_df = condition,
-            file_name = "formatted_condition.csv",
+        dispensing_with_additional_fileds = cf.append_additional_fields(
+            mapped_df = dispensing,
+            file_name = "formatted_dispensing.csv",
             formatted_data_folder_path = formatted_data_folder_path,
-            join_field = "CONDITIONID",
+            join_field = "DISPENSINGID",
             spark = spark)
 
         cf.write_pyspark_output_file(
-                        payspark_df = condition_with_additional_fileds,
-                        output_file_name = "mapped_condition.csv",
+                        payspark_df = dispensing_with_additional_fileds,
+                        output_file_name = "mapped_dispensing.csv",
                         output_data_folder_path= mapped_data_folder_path)
 
 
+
         spark.stop()
+
 
 except Exception as e:
 
@@ -136,6 +138,6 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'condition_mapper.py' )
+                            job     = 'demographic_mapper.py' )
 
     cf.print_with_style(str(e), 'danger red')

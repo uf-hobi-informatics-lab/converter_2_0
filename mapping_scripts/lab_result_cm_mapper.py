@@ -58,8 +58,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -69,8 +69,8 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_lab_result_cm = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_lab_result_cm.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
-
+ 
+        unmapped_lab_result_cm    = cf.spark_read(formatted_data_folder_path+"formatted_lab_result_cm.csv", spark)
 
 
     ###################################################################################################################################
@@ -83,6 +83,8 @@ try:
         mapping_lab_px_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_lab_px_type_dict.items())])
         mapping_result_qual_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_result_qual_dict.items())])
         mapping_result_modifier_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_result_modifier_dict.items())])
+        mapping_result_modifier_low_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_norm_modifier_low_dict.items())])
+        mapping_result_modifier_high_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_norm_modifier_high_dict.items())])
         mapping_result_unit_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_result_unit_dict.items())])
         mapping_abn_ind_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_abn_ind_dict.items())])
 
@@ -97,30 +99,31 @@ try:
             
             
 
+ 
                                     cf.encrypt_id_udf(unmapped_lab_result_cm['LAB_RESULT_CM_ID']).alias("LAB_RESULT_CM_ID"),
                                     cf.encrypt_id_udf(unmapped_lab_result_cm['PATID']).alias("PATID"),
                                     cf.encrypt_id_udf(unmapped_lab_result_cm['ENCOUNTERID']).alias("ENCOUNTERID"),
-                                    mapping_specimen_source_dict[upper(col("SPECIMEN_SOURCE"))].alias("SPECIMEN_SOURCE"),
+                                    coalesce(mapping_specimen_source_dict[upper(col("SPECIMEN_SOURCE"))],col('SPECIMEN_SOURCE')).alias("SPECIMEN_SOURCE"),
                                     unmapped_lab_result_cm['LAB_LOINC'].alias("LAB_LOINC"),
-                                    mapping_lab_result_source_dict[upper(col("LAB_RESULT_SOURCE"))].alias("LAB_RESULT_SOURCE"),
-                                    mapping_priority_dict[upper(col("PRIORITY"))].alias("PRIORITY"),
-                                    mapping_result_loc_dict[upper(col("RESUTL_LOC"))].alias("RESUTL_LOC"),
+                                    coalesce(mapping_lab_result_source_dict[upper(col("LAB_RESULT_SOURCE"))],col('LAB_RESULT_SOURCE')).alias("LAB_RESULT_SOURCE"),
+                                    coalesce(mapping_priority_dict[upper(col("PRIORITY"))],col('PRIORITY')).alias("PRIORITY"),
+                                    coalesce(mapping_result_loc_dict[upper(col("RESULT_LOC"))],col('RESULT_LOC')).alias("RESULT_LOC"),
                                     unmapped_lab_result_cm['LAB_PX'].alias("LAB_PX"),
-                                    mapping_lab_px_type_dict[upper(col("LAB_PX_TYPE"))].alias("LAB_PX_TYPE"),
-                                    cf.get_date_from_datetime_udf(unmapped_lab_result_cm['LAB_ORDER_DATE']).alias("LAB_ORDER_DATE"),
-                                    cf.get_date_from_datetime_udf(unmapped_lab_result_cm['SPECIMEN_TIME']).alias("SPECIMEN_TIME"),
-                                    cf.get_date_from_datetime_udf(unmapped_lab_result_cm['RESULT_DATE']).alias("RESULT_DATE"),
-                                    cf.get_time_from_datetime_udf(unmapped_lab_result_cm['RESTULT_TIME']).alias("RESTULT_TIME"),
-                                    mapping_result_qual_dict[upper(col("RESULT_QUAL"))].alias("RESULT_QUAL"),
+                                    coalesce(mapping_lab_px_type_dict[upper(col("LAB_PX_TYPE"))],col('LAB_PX_TYPE')).alias("LAB_PX_TYPE"),
+                                    cf.get_date_from_date_str_with_default_value_udf(unmapped_lab_result_cm['LAB_ORDER_DATE']).alias("LAB_ORDER_DATE"),
+                                    unmapped_lab_result_cm['SPECIMEN_TIME'].alias("SPECIMEN_TIME"),
+                                    unmapped_lab_result_cm['RESULT_DATE'].alias("RESULT_DATE"),
+                                    unmapped_lab_result_cm['RESULT_TIME'].alias("RESULT_TIME"),
+                                    coalesce(mapping_result_qual_dict[upper(col("RESULT_QUAL"))],col('RESULT_QUAL')).alias("RESULT_QUAL"),
                                     unmapped_lab_result_cm['RESULT_SNOMED'].alias("RESULT_SNOMED"),
                                     unmapped_lab_result_cm['RESULT_NUM'].alias("RESULT_NUM"),
-                                    mapping_result_modifier_dict[upper(col("RESULT_MODIFIER"))].alias("RESULT_MODIFIER"),
-                                    mapping_result_unit_dict[upper(col("RESULT_UNIT"))].alias("RESULT_UNIT"),
+                                    coalesce(mapping_result_modifier_dict[upper(col("RESULT_MODIFIER"))],col('RESULT_MODIFIER')).alias("RESULT_MODIFIER"),
+                                    coalesce(mapping_result_unit_dict[upper(col("RESULT_UNIT"))],col('RESULT_UNIT')).alias("RESULT_UNIT"),
                                     unmapped_lab_result_cm['NORM_RANGE_LOW'].alias("NORM_RANGE_LOW"),
-                                    unmapped_lab_result_cm['NORM_MODIFIER_LOW'].alias("NORM_MODIFIER_LOW"),
+                                    coalesce(mapping_result_modifier_low_dict[upper(col("NORM_MODIFIER_LOW"))],col('NORM_MODIFIER_LOW')).alias("NORM_MODIFIER_LOW"),
                                     unmapped_lab_result_cm['NORM_RANGE_HIGH'].alias("NORM_RANGE_HIGH"),
-                                    unmapped_lab_result_cm['NORM_MODIFIER_HIGH'].alias("NORM_MODIFIER_HIGH"),
-                                    mapping_abn_ind_dict[upper(col("ABN_IND"))].alias("ABN_IND"),
+                                    coalesce(mapping_result_modifier_high_dict[upper(col("NORM_MODIFIER_HIGH"))],col('NORM_MODIFIER_HIGH')).alias("NORM_MODIFIER_HIGH"),                               
+                                    coalesce(mapping_abn_ind_dict[upper(col("ABN_IND"))],col('ABN_IND')).alias("ABN_IND"),
                                     unmapped_lab_result_cm['RAW_LAB_NAME'].alias("RAW_LAB_NAME"),
                                     unmapped_lab_result_cm['RAW_LAB_CODE'].alias("RAW_LAB_CODE"),
                                     unmapped_lab_result_cm['RAW_PANEL'].alias("RAW_PANEL"),

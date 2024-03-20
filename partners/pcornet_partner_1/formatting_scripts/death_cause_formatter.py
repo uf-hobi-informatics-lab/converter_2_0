@@ -26,6 +26,11 @@ input_data_folder = args.data_folder
 spark = cf.get_spark_session("death_cause_formatter")
 
 
+
+def truncate_8_chars(val):
+    return val[:8]
+
+truncate_8_chars_udf = udf(truncate_8_chars, StringType())
 try:
         
     ###################################################################################################################################
@@ -37,9 +42,9 @@ try:
     input_data_folder_path               = f'/data/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/{partner_name.lower()}/data/formatter_output/{input_data_folder}/'
 
-    death_table_name       = 'Epic_Deathcause_*.txt'
+    death_table_name       = '*Cause*.txt'
 
-    unformatted_death_cause = spark.read.load(input_data_folder_path+death_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    unformatted_death_cause = spark.read.load(input_data_folder_path+death_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
     ###################################################################################################################################
 
@@ -47,13 +52,13 @@ try:
 
     ###################################################################################################################################
 
-    pcornet_death = unformatted_death_cause.select(    
+    pcornet_death_cause = unformatted_death_cause.select(    
                                                     
-                                                    unformatted_death_cause['patid'].alias("PATID"),
-                                                    unformatted_death_cause['death_cause'].alias("DEATH_CAUSE"),
+                                                    unformatted_death_cause['patid'].alias("PATID"), 
+                                                    truncate_8_chars_udf(col('death_cause')).alias("DEATH_CAUSE"),
                                                     unformatted_death_cause['death_cause_code'].alias("DEATH_CAUSE_CODE"),
                                                     unformatted_death_cause['death_cause_type'].alias("DEATH_CAUSE_TYPE"),
-                                                    unformatted_death_cause['death_cause_source'].alias("DEATH_CAUSE_SOURCE"),
+                                                    lit('L').alias("DEATH_CAUSE_SOURCE"),
                                                     unformatted_death_cause['death_cause_confidence'].alias("DEATH_CAUSE_CONFIDENCE"),
                                                         )
 
@@ -64,7 +69,7 @@ try:
     ###################################################################################################################################
 
     cf.write_pyspark_output_file(
-                        payspark_df = pcornet_death,
+                        payspark_df = pcornet_death_cause,
                         output_file_name = "formatted_death_cause.csv",
                         output_data_folder_path = formatter_output_data_folder_path)
 

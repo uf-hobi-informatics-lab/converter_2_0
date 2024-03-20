@@ -59,8 +59,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -69,8 +69,7 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_provider = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_provider.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
-
+        unmapped_provider    = cf.spark_read(formatted_data_folder_path+"formatted_provider.csv", spark)
 
 
     ###################################################################################################################################
@@ -90,10 +89,10 @@ try:
         provider = unmapped_provider.select(              
             
                                     cf.encrypt_id_udf(unmapped_provider['PROVIDERID']).alias("PROVIDERID"),
-                                    mapping_provider_sex_dict[upper(col('PROVIDER_SEX'))].alias("PROVIDER_SEX"),
-                                    mapping_provider_specialty_primary_dict[upper(col('PROVIDER_SPECIALTY_PRIMARY'))].alias("PROVIDER_SPECIALTY_PRIMARY"),
+                                    coalesce(mapping_provider_sex_dict[upper(col('PROVIDER_SEX'))],col('PROVIDER_SEX')).alias("PROVIDER_SEX"),
+                                    coalesce(mapping_provider_specialty_primary_dict[upper(col('PROVIDER_SPECIALTY_PRIMARY'))],col('PROVIDER_SPECIALTY_PRIMARY')).alias("PROVIDER_SPECIALTY_PRIMARY"),
                                     unmapped_provider['PROVIDER_NPI'].alias("PROVIDER_NPI"),
-                                    mapping_provider_npi_flag_dict[upper(col('PROVIDER_NPI_FLAG'))].alias("PROVIDER_NPI_FLAG"),
+                                    coalesce(mapping_provider_npi_flag_dict[upper(col('PROVIDER_NPI_FLAG'))],col('PROVIDER_NPI_FLAG')).alias("PROVIDER_NPI_FLAG"),
                                     unmapped_provider['RAW_PROVIDER_SPECIALTY_PRIMARY'].alias("RAW_PROVIDER_SPECIALTY_PRIMARY"),
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),

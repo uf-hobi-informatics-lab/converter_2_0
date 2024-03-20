@@ -5,6 +5,7 @@ from pyspark.sql.types import StructType, StructField, StringType
 from datetime import datetime
 from pyspark.sql.functions import *
 from commonFunctions import CommonFuncitons
+import argparse
 
 
 
@@ -36,7 +37,7 @@ try:
 
     death_table_name       = 'Epic_Death_*.txt'
 
-    death_IN = spark.read.load(input_data_folder_path+death_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    death_IN = spark.read.load(input_data_folder_path+death_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
 
 

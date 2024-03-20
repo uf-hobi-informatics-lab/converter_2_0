@@ -59,8 +59,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -69,8 +69,7 @@ try:
     # Loading the unmapped enctounter table
     ###################################################################################################################################
 
-        unmapped_procedures = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_procedures.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
-
+        unmapped_procedures    = cf.spark_read(formatted_data_folder_path+"formatted_procedures.csv", spark)
 
 
     ###################################################################################################################################
@@ -97,14 +96,14 @@ try:
                                     cf.encrypt_id_udf(unmapped_procedures['PROCEDURESID']).alias("PROCEDURESID"),
                                     cf.encrypt_id_udf(unmapped_procedures['PATID']).alias("PATID"),
                                     cf.encrypt_id_udf(unmapped_procedures['ENCOUNTERID']).alias("ENCOUNTERID"),
-                                    mapping_procedures_enc_type_dict[upper(col("ENC_TYPE"))].alias("ENC_TYPE"),
-                                    cf.get_date_from_datetime_udf(unmapped_procedures['ADMIT_DATE']).alias("ADMIT_DATE"),
+                                    coalesce(mapping_procedures_enc_type_dict[upper(col("ENC_TYPE"))],col('ENC_TYPE')).alias("ENC_TYPE"),
+                                    unmapped_procedures['ADMIT_DATE'].alias("ADMIT_DATE"),
                                     cf.encrypt_id_udf(unmapped_procedures['PROVIDERID']).alias("PROVIDERID"),
-                                    cf.get_date_from_datetime_udf(unmapped_procedures['PX_DATE']).alias("PX_DATE"),
+                                    unmapped_procedures['PX_DATE'].alias("PX_DATE"),
                                     unmapped_procedures['PX'].alias("PX"),
-                                    mapping_px_type_dict[upper(col("PX_TYPE"))].alias("PX_TYPE"),
-                                    mapping_px_source_dict[upper(col("PX_SOURCE"))].alias("PX_SOURCE"),
-                                    mapping_ppx_dict[upper(col("PPX"))].alias("PPX"),
+                                    coalesce(mapping_px_type_dict[upper(col("PX_TYPE"))],col('PX_TYPE')).alias("PX_TYPE"),
+                                    coalesce(mapping_px_source_dict[upper(col("PX_SOURCE"))],col('PX_SOURCE')).alias("PX_SOURCE"),
+                                    coalesce(mapping_ppx_dict[upper(col("PPX"))],col('PPX')).alias("PPX"),
                                     unmapped_procedures['RAW_PX'].alias("RAW_PX"),
                                     unmapped_procedures['RAW_PX_TYPE'].alias("RAW_PX_TYPE"),
                                     unmapped_procedures['RAW_PPX'].alias("RAW_PPX"),

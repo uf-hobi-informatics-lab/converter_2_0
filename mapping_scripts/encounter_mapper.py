@@ -59,8 +59,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -70,8 +70,7 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_encounter = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_encounter.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
-
+        unmapped_encounter    = cf.spark_read(formatted_data_folder_path+"formatted_encounter.csv", spark)
 
 
     ###################################################################################################################################
@@ -81,7 +80,9 @@ try:
         mapping_discharge_disposition_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_discharge_disposition_dict.items())])
         mapping_discharge_status_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_discharge_status_dict.items())])
         mapping_admitting_source_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_admitting_source_dict.items())])
-        mapping_payer_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_payer_type_dict.items())])
+        mapping_payer_type_secondary_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_payer_type_secondary_dict.items())])
+        mapping_payer_type_primary_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_payer_type_primary_dict.items())])
+
         mapping_facility_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_facility_type_dict.items())])
         mapping_drg_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_drg_type_dict.items())])
 
@@ -98,22 +99,22 @@ try:
 
                                     cf.encrypt_id_udf(unmapped_encounter['ENCOUNTERID']).alias("ENCOUNTERID"),
                                     cf.encrypt_id_udf(unmapped_encounter['PATID']).alias("PATID"),
-                                    cf.get_date_from_datetime_udf(unmapped_encounter['ADMIT_DATE']).alias("ADMIT_DATE"),
-                                    cf.get_time_from_datetime_udf(unmapped_encounter['ADMIT_TIME']).alias("ADMIT_TIME"),
-                                    cf.get_date_from_datetime_udf(unmapped_encounter['DISCHARGE_DATE']).alias("DISCHARGE_DATE"),
-                                    cf.get_time_from_datetime_udf(unmapped_encounter['DISCHARGE_TIME']).alias("DISCHARGE_TIME"),
+                                    unmapped_encounter['ADMIT_DATE'].alias("ADMIT_DATE"),
+                                    unmapped_encounter['ADMIT_TIME'].alias("ADMIT_TIME"),
+                                    unmapped_encounter['DISCHARGE_DATE'].alias("DISCHARGE_DATE"),
+                                    unmapped_encounter['DISCHARGE_TIME'].alias("DISCHARGE_TIME"),
                                     cf.encrypt_id_udf(unmapped_encounter['PROVIDERID']).alias("PROVIDERID"),
                                     unmapped_encounter['FACILITY_LOCATION'].alias("FACILITY_LOCATION"),
-                                    mapping_enc_type_dict[upper(col("ENC_TYPE"))].alias("ENC_TYPE"),
+                                    coalesce(mapping_enc_type_dict[upper(col("ENC_TYPE"))],col('ENC_TYPE')).alias("ENC_TYPE"),
                                     unmapped_encounter['FACILITYID'].alias("FACILITYID"),
-                                    mapping_discharge_disposition_dict[upper(col("DISCHARGE_DISPOSITION"))].alias("DISCHARGE_DISPOSITION"),
-                                    mapping_discharge_status_dict[upper(col("DISCHARGE_STATUS"))].alias("DISCHARGE_STATUS"),
+                                    coalesce(mapping_discharge_disposition_dict[upper(col("DISCHARGE_DISPOSITION"))],col('DISCHARGE_DISPOSITION')).alias("DISCHARGE_DISPOSITION"),
+                                    coalesce(mapping_discharge_status_dict[upper(col("DISCHARGE_STATUS"))],col('DISCHARGE_STATUS')).alias("DISCHARGE_STATUS"),
                                     unmapped_encounter['DRG'].alias("DRG"),
-                                    mapping_drg_type_dict[upper(col("DRG_TYPE"))].alias("DRG_TYPE"),
-                                    mapping_admitting_source_dict[upper(col("ADMITTING_SOURCE"))].alias("ADMITTING_SOURCE"),
-                                    mapping_payer_type_dict[upper(col("PAYER_TYPE_PRIMARY"))].alias("PAYER_TYPE_PRIMARY"),
-                                    mapping_payer_type_dict[upper(col("PAYER_TYPE_SECONDARY"))].alias("PAYER_TYPE_SECONDARY"),
-                                    mapping_facility_type_dict[upper(col("FACILITY_TYPE"))].alias("FACILITY_TYPE"),
+                                    coalesce(mapping_drg_type_dict[upper(col("DRG_TYPE"))],col('DRG_TYPE')).alias("DRG_TYPE"),
+                                    coalesce(mapping_admitting_source_dict[upper(col("ADMITTING_SOURCE"))],col('ADMITTING_SOURCE')).alias("ADMITTING_SOURCE"),
+                                    coalesce(mapping_payer_type_secondary_dict[upper(col("PAYER_TYPE_PRIMARY"))],col('PAYER_TYPE_PRIMARY')).alias("PAYER_TYPE_PRIMARY"),
+                                    coalesce(mapping_payer_type_secondary_dict[upper(col("PAYER_TYPE_SECONDARY"))],col('PAYER_TYPE_SECONDARY')).alias("PAYER_TYPE_SECONDARY"),
+                                    coalesce(mapping_facility_type_dict[upper(col("FACILITY_TYPE"))],col('FACILITY_TYPE')).alias("FACILITY_TYPE"),
                                     unmapped_encounter['RAW_SITEID'].alias("RAW_SITEID"),
                                     unmapped_encounter['RAW_ENC_TYPE'].alias("RAW_ENC_TYPE"),
                                     unmapped_encounter['RAW_DISCHARGE_DISPOSITION'].alias("RAW_DISCHARGE_DISPOSITION"),

@@ -32,14 +32,14 @@ try:
     # Loading the provider table to be converted to the pcornet_provider table
 
     ###################################################################################################################################
-
     input_data_folder_path               = f'/data/{input_data_folder}/'
+    # input_data_folder_path               = f'/app/partners/pcornet_partner_1/data/input/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/{partner_name.lower()}/data/formatter_output/{input_data_folder}/'
 
 
     provider_table_name       = 'Epic_Provider_*.txt'
 
-    provider_in = spark.read.load(input_data_folder_path+provider_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    provider_in = spark.read.load(input_data_folder_path+provider_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
 
     ###################################################################################################################################
@@ -57,8 +57,8 @@ try:
                     provider_in['provider_npi'].alias('PROVIDER_NPI'),
                     provider_in['provider_npi_flag'].alias('PROVIDER_NPI_FLAG'),
                     provider_in['raw_provider_specialty_primary'].alias('RAW_PROVIDER_SPECIALTY_PRIMARY'),
-                    provider_in['provider_specialty_secondary_1'].alias('PROVIDER_SPECIALTY_SECONDARY_1'),
-                    provider_in['provider_specialty_secondary_2'].alias('PROVIDER_SPECIALTY_SECONDARY_2'),
+                    # provider_in['provider_specialty_secondary_1'].alias('PROVIDER_SPECIALTY_SECONDARY_1'),
+                    # provider_in['provider_specialty_secondary_2'].alias('PROVIDER_SPECIALTY_SECONDARY_2'),
     )
 
     ###################################################################################################################################

@@ -19,10 +19,12 @@ cf = CommonFuncitons('omop_partner_1')
 spark = cf.get_spark_session("lab_result_cm_formatter")
 
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--data_folder")
 args = parser.parse_args()
 input_data_folder = args.data_folder
+
 
 ###################################################################################################################################
 
@@ -30,33 +32,44 @@ input_data_folder = args.data_folder
 
 ###################################################################################################################################
 
+
 def get_lab_result_loc( measurement_source_value):
 
+    try:
         if measurement_source_value[0:3] == 'POC':
             return 'P'
         else:
             return 'L'
+    except:
+        return 'L'
 
 get_lab_result_loc_udf = udf(get_lab_result_loc, StringType())
 
-try: 
+
+def get_time_from_datetime_omop_partner_1(datetime_str):
+        if datetime_str == None or datetime_str =='':
+            return None
+
+        return datetime_str[11:16]
+
+get_time_from_datetime_omop_partner_1_udf = udf(get_time_from_datetime_omop_partner_1, StringType())
+
+
+try:
+
 
     ###################################################################################################################################
 
     # Loading the measurement table to be converted to the lab_result_cm table
 
     ###################################################################################################################################
-
     input_data_folder_path               = f'/data/{input_data_folder}/'
-    formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
+    formatter_output_data_folder_path    = '/app/partners/omop_partner_1/data/formatter_output/'+ input_data_folder+'/'
 
 
+    measurement_table_name   = 'measurement.csv'
 
-    measurement_table_name   = 'Measurement.txt'
-
-    measurement = spark.read.load(input_data_folder_path+measurement_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
-
-
+    measurement = spark.read.load(input_data_folder_path+measurement_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
 
 
@@ -75,14 +88,14 @@ try:
                                                     lit('OD').alias("LAB_RESULT_SOURCE"),
                                                     measurement['measurement_loinc_source'].alias("LAB_LOINC_SOURCE"),
                                                     measurement['priority'].alias("PRIORITY"),
-                                                    get_lab_result_loc_udf(measurement['measurement_code_source_value']).alias("RESUTL_LOC"),
+                                                    get_lab_result_loc_udf(measurement['measurement_code_source_value']).alias("RESULT_LOC"),
                                                     lit('').alias("LAB_PX"),
                                                     lit('').alias("LAB_PX_TYPE"),
                                                     measurement['measurement_order_date'].alias("LAB_ORDER_DATE"),
                                                     measurement['measurement_date'].alias("SPECIMEN_DATE"),
-                                                    cf.get_time_from_datetime_udf(measurement['measurement_datetime']).alias("SPECIMEN_TIME"),
+                                                    get_time_from_datetime_omop_partner_1_udf(measurement['measurement_datetime']).alias("SPECIMEN_TIME"),
                                                     measurement['measurement_date'].alias("RESULT_DATE"),
-                                                    cf.get_time_from_datetime_udf(measurement['measurement_datetime']).alias("RESTULT_TIME"),
+                                                    get_time_from_datetime_omop_partner_1_udf(measurement['measurement_datetime']).alias("RESULT_TIME"),
                                                     measurement['value_as_string'].alias("RESULT_QUAL"),
                                                     lit('').alias("RESULT_SNOMED"),
                                                     measurement['value_as_number'].alias("RESULT_NUM"),
@@ -101,8 +114,7 @@ try:
                                                     lit('').alias("RAW_ORDER_DEPT"),
                                                     lit('').alias("RAW_FACILITY_CODE"),
                                 
-                                                                                        
-                                                
+                                                                                                                               
                                                     
                                                         )
 
@@ -120,6 +132,9 @@ try:
 
     spark.stop()
 
+
+
+
 except Exception as e:
 
     spark.stop()
@@ -129,10 +144,6 @@ except Exception as e:
                             job     = 'lab_result_cm_formatter.py' )
 
     cf.print_with_style(str(e), 'danger red')
-
-
-
-
 
 
 

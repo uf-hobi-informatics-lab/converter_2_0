@@ -20,12 +20,14 @@ cf = CommonFuncitons('omop_partner_1')
 spark = cf.get_spark_session("med_admin_formatter")
 
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--data_folder")
 args = parser.parse_args()
 input_data_folder = args.data_folder
 
-try:
+
+try: 
 
 
     ###################################################################################################################################
@@ -34,13 +36,13 @@ try:
 
     ###################################################################################################################################
 
+
     input_data_folder_path               = f'/data/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
 
+    drug_exposure_table_name   = 'drug_exposure.csv'
 
-    drug_exposure_table_name   = 'Drug_Exposure.txt'
-
-    drug_exposure = spark.read.load(input_data_folder_path+drug_exposure_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
+    drug_exposure = spark.read.load(input_data_folder_path+drug_exposure_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
     filter_values = ["Inpatient Administration","Inpatient administration","Inpatient","Medication list entry","Physician administered drug (identified from EHR order)"]
     filtered_drug_exposure = drug_exposure.filter(col("drug_type").isin(filter_values))
@@ -96,7 +98,6 @@ try:
     spark.stop()
 
 
-
 except Exception as e:
 
     spark.stop()
@@ -106,6 +107,7 @@ except Exception as e:
                             job     = 'med_admin_formatter.py' )
 
     cf.print_with_style(str(e), 'danger red')
+
 
 
 

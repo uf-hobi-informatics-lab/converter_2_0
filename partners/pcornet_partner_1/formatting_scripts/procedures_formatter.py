@@ -13,6 +13,34 @@ from commonFunctions import CommonFuncitons
 import argparse
 
 
+
+def fh_ppx(raw_ppx):
+
+    """
+    Mapping for PPX - Per Duke 12/11/2019
+    0 -                           UN=Unknown
+    1 -                           P=Principal;
+    2 -                           S=Secondary
+    3-999                    OT=Other
+    """
+    ppx = None
+    if raw_ppx == '0': ppx = 'S'
+    elif raw_ppx == '1': ppx = 'P'
+    elif raw_ppx == '2': ppx = 'S'
+    elif raw_ppx >= '3': ppx = 'OT'
+    else: ppx = 'UN'
+    
+
+
+
+    return ppx
+
+
+fh_ppx_udf = udf(fh_ppx, StringType())
+
+
+
+
 partner_name = 'pcornet_partner_1'
 
 cf =CommonFuncitons(partner_name.upper())
@@ -38,10 +66,10 @@ try:
 
 
 
-    procedures_table_name   = 'Epic_Procedure_*.txt'
+    procedures_table_name   = 'Epic_Procedure*.txt'
 
 
-    procedures_in = spark.read.load(input_data_folder_path+procedures_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    procedures_in = spark.read.load(input_data_folder_path+procedures_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
     ###################################################################################################################################
 
@@ -60,11 +88,11 @@ try:
                     cf.format_date_udf(procedures_in['admit_date']).alias('ADMIT_DATE'),
                     procedures_in['providerid'].alias('PROVIDERID'),
                     cf.format_date_udf(procedures_in['px_date']).alias('PX_DATE'),
-                    procedures_in['px'].alias('PX'),
-                    procedures_in['px_type'].alias('PX_TYPE'),
-                    procedures_in['px_source'].alias('PX_SOURCE'),
-                    procedures_in['ppx'].alias('PPX'),
-                    procedures_in['rendering_providerid'].alias('RENDERING_PROVIDERID'),
+                    procedures_in['raw_px'].alias('PX'),
+                    procedures_in['raw_px_type'].alias('PX_TYPE'),
+                    lit('OD').alias('PX_SOURCE'),
+                    fh_ppx_udf(procedures_in['raw_ppx']).alias('PPX'),               
+                    lit("").alias('RENDERING_PROVIDERID'),
                     procedures_in['raw_px'].alias('RAW_PX'),
                     procedures_in['raw_px_type'].alias('RAW_PX_TYPE'),
                     procedures_in['raw_ppx'].alias('RAW_PPX'),

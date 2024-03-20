@@ -24,6 +24,22 @@ args = parser.parse_args()
 input_data_folder = args.data_folder
 
 
+def fix_pcornet_partner_1_date (date_str):
+
+    try:
+
+        input_date = datetime.strptime(date_str, "%m/%d/%Y")
+
+        output_date_str = input_date.strftime("%Y-%m-%d")
+
+        return output_date_str
+    except:
+        return None
+        
+fix_pcornet_partner_1_date_udf = udf(fix_pcornet_partner_1_date, StringType())
+
+
+
 #Create SparkSession
 spark = cf.get_spark_session("encounter_formatter")
 
@@ -41,7 +57,7 @@ try:
 
     enrollment_in_table_name       = 'Epic_Enrollment_*.txt'
 
-    enrollment_in = spark.read.load(input_data_folder_path+enrollment_in_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    enrollment_in = spark.read.load(input_data_folder_path+enrollment_in_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
 
 
@@ -55,8 +71,8 @@ try:
     enrollment = enrollment_in.select(              
         
                                                     enrollment_in['patid'].alias("PATID"),
-                                                    enrollment_in['enr_start_date'].alias("ENR_START_DATE"),
-                                                    enrollment_in['enr_end_date'].alias("ENR_END_DATE"),
+                                                    fix_pcornet_partner_1_date_udf(enrollment_in['enr_start_date']).alias("ENR_START_DATE"),
+                                                    fix_pcornet_partner_1_date_udf(enrollment_in['enr_end_date']).alias("ENR_END_DATE"),
                                                     enrollment_in['chart'].alias("CHART"),
                                                     enrollment_in['enr_basis'].alias("ENR_BASIS"),
                                                     

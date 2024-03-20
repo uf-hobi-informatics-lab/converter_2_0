@@ -42,7 +42,7 @@ try:
 
     demographic_table_name       = 'Epic_Demographics_*.txt'
 
-    demographic_IN = spark.read.load(input_data_folder_path+demographic_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    demographic_IN = spark.read.load(input_data_folder_path+demographic_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
 
 
@@ -62,7 +62,7 @@ try:
                         demographic_IN['gender_identity'].alias('GENDER_IDENTITY'),
                         demographic_IN['hispanic'].alias('HISPANIC'),
                         demographic_IN['race'].alias('RACE'),
-                        demographic_IN['biobank_flag'].alias('BIOBANK_FLAG'),
+                        lit('N').alias('BIOBANK_FLAG'),
                         demographic_IN['pat_pref_language_spoken'].alias('PAT_PREF_LANGUAGE_SPOKEN'),
                         demographic_IN['raw_sex'].alias('RAW_SEX'),
                         demographic_IN['raw_sexual_orientation'].alias('RAW_SEXUAL_ORIENTATION'),
@@ -70,7 +70,7 @@ try:
                         demographic_IN['raw_hispanic'].alias('RAW_HISPANIC'),
                         demographic_IN['raw_race'].alias('RAW_RACE'),
                         demographic_IN['raw_pat_pref_language_spoken'].alias('RAW_PAT_PREF_LANGUAGE_SPOKEN'),
-                        demographic_IN['zip_code'].alias('ZIP_CODE'),
+                        demographic_IN['zipcode'].alias('ZIP_CODE'),
 
 
     )

@@ -20,14 +20,16 @@ cf = CommonFuncitons('omop_partner_1')
 spark = cf.get_spark_session("lds_address_hx_formatter")
 
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--data_folder")
 args = parser.parse_args()
 input_data_folder = args.data_folder
 
 
+try:
 
-try: 
+
 
     ###################################################################################################################################
 
@@ -39,12 +41,12 @@ try:
     formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
 
 
-    lds_address_hx_table_name         = 'Lds_Address_hx.txt'
-    location_table_name               = 'Locations.txt'
+    lds_address_hx_table_name         = 'address.csv'
+    location_table_name               = 'location.csv'
 
 
-    lds_address_hx = spark.read.load(input_data_folder_path+lds_address_hx_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
-    location = spark.read.load(input_data_folder_path+location_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
+    lds_address_hx = spark.read.load(input_data_folder_path+lds_address_hx_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
+    location = spark.read.load(input_data_folder_path+location_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
     location_data = location.collect()
 
@@ -112,6 +114,9 @@ except Exception as e:
                             job     = 'lds_address_hx_formatter.py' )
 
     cf.print_with_style(str(e), 'danger red')
+
+
+
 
 
 

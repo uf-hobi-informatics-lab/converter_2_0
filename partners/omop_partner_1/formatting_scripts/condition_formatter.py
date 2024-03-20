@@ -19,12 +19,16 @@ cf =CommonFuncitons('omop_partner_1')
 #Create SparkSession
 spark = cf.get_spark_session("condition_formatter")
 
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--data_folder")
 args = parser.parse_args()
 input_data_folder = args.data_folder
 
-try:
+
+try: 
+
 
     ###################################################################################################################################
     
@@ -33,17 +37,17 @@ try:
     ###################################################################################################################################
 
 
+
     input_data_folder_path               = f'/data/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
 
 
-    condition_occurrence_table_name   = 'Condition_Occurrence.txt'
+    condition_occurrence_table_name   = 'condition_occurrence.csv'
 
-    condition_occurrence = spark.read.load(input_data_folder_path+condition_occurrence_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
-    filter_values = ["EHR problem list entry"] # Only rows where condition_data_origin is in this list will convert to the CONDITION table
+    condition_occurrence = spark.read.load(input_data_folder_path+condition_occurrence_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
+
+    filter_values = ["EHR problem list entry","EHR problem list entry - Billing","EHR Chief Complaint"] # Only rows where condition_data_origin is in this list will convert to the CONDITION table
     filtered_condition_occurrence = condition_occurrence.filter(col("condition_data_origin").isin(filter_values))
-
-
 
     ###################################################################################################################################
 
@@ -67,7 +71,8 @@ try:
 
     ###################################################################################################################################
 
-    condition = filtered_condition_occurrence.select(  filtered_condition_occurrence['condition_occurrence_id'].alias("CONDITIONID"),
+    condition = filtered_condition_occurrence.select(  
+                                                    filtered_condition_occurrence['condition_occurrence_id'].alias("CONDITIONID"),
                                                     filtered_condition_occurrence['person_id'].alias("PATID"),
                                                     filtered_condition_occurrence['visit_occurrence_id'].alias("ENCOUNTERID"),
                                                     filtered_condition_occurrence['condition_start_date'].alias("REPORT_DATE"),
@@ -80,7 +85,7 @@ try:
                                                     filtered_condition_occurrence['condition_status'].alias("RAW_CONDITION_STATUS"),
                                                     filtered_condition_occurrence['condition_code'].alias("RAW_CONDITION"),
                                                     filtered_condition_occurrence['condition_code'].alias("RAW_CONDITION_TYPE"),
-                                                    filtered_condition_occurrence['poa'].alias("RAW_CONDITION_SOURCE"),
+                                                    filtered_condition_occurrence['Poa'].alias("RAW_CONDITION_SOURCE"),
 
                                                 
                                                     
@@ -111,7 +116,6 @@ except Exception as e:
                             job     = 'condition_formatter.py' )
 
     cf.print_with_style(str(e), 'danger red')
-
 
 
 

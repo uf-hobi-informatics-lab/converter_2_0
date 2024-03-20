@@ -35,12 +35,13 @@ try:
 
     ###################################################################################################################################
     input_data_folder_path               = f'/data/{input_data_folder}/'
+    # input_data_folder_path               = f'/app/partners/pcornet_partner_1/data/input/{input_data_folder}/'    
     formatter_output_data_folder_path    = f'/app/partners/{partner_name.lower()}/data/formatter_output/{input_data_folder}/'
 
 
     med_admin_table_name   = 'Epic_Medadmin_*.txt'
 
-    med_admin_in = spark.read.load(input_data_folder_path+med_admin_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    med_admin_in = spark.read.load(input_data_folder_path+med_admin_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
     ###################################################################################################################################
 
@@ -64,7 +65,7 @@ try:
                     med_admin_in['medadmin_dose_admin'].alias('MEDADMIN_DOSE_ADMIN'),
                     med_admin_in['medadmin_dose_admin_unit'].alias('MEDADMIN_DOSE_ADMIN_UNIT'),
                     med_admin_in['medadmin_route'].alias('MEDADMIN_ROUTE'),
-                    med_admin_in['medadmin_source'].alias('MEDADMIN_SOURCE'),
+                    lit('OD').alias('MEDADMIN_SOURCE'),
                     med_admin_in['raw_medadmin_med_name'].alias('RAW_MEDADMIN_MED_NAME'),
                     med_admin_in['raw_medadmin_code'].alias('RAW_MEDADMIN_CODE'),
                     med_admin_in['raw_medadmin_dose_admin'].alias('RAW_MEDADMIN_DOSE_ADMIN'),

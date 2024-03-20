@@ -13,6 +13,15 @@ from commonFunctions import CommonFuncitons
 import argparse
 
 
+def ot_or_ni( val):
+    if val:
+        return 'OT'
+
+    return 'NI'
+
+ot_or_ni_udf = udf(ot_or_ni,StringType())
+
+
 partner_name = 'pcornet_partner_1'
 
 cf =CommonFuncitons(partner_name.upper())
@@ -35,12 +44,14 @@ try:
     ###################################################################################################################################
 
     input_data_folder_path               = f'/data/{input_data_folder}/'
+    # input_data_folder_path               = f'/app/partners/pcornet_partner_1/data/input/{input_data_folder}/'
+
     formatter_output_data_folder_path    = f'/app/partners/{partner_name.lower()}/data/formatter_output/{input_data_folder}/'
 
 
     prescribing_table_name   = 'Epic_Prescribing_*.txt'
 
-    prescribing_in = spark.read.load(input_data_folder_path+prescribing_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    prescribing_in = spark.read.load(input_data_folder_path+prescribing_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
     ###################################################################################################################################
 
@@ -59,19 +70,19 @@ try:
                             cf.get_time_from_datetime_udf(prescribing_in['rx_order_time']).alias('RX_ORDER_TIME'),
                             cf.format_date_udf(prescribing_in['rx_start_date']).alias('RX_START_DATE'),
                             cf.format_date_udf(prescribing_in['rx_end_date']).alias('RX_END_DATE'),
-                            prescribing_in['rx_dose_ordered'].alias('RX_DOSE_ORDERED'),
-                            prescribing_in['rx_dose_ordered_unit'].alias('RX_DOSE_ORDERED_UNIT'),
-                            prescribing_in['rx_quantity'].alias('RX_QUANTITY'),
+                            prescribing_in['raw_rx_dose_ordered'].alias('RX_DOSE_ORDERED'),
+                            prescribing_in['raw_rx_dose_ordered_unit'].alias('RX_DOSE_ORDERED_UNIT'),
+                            prescribing_in['raw_rx_quantity'].alias('RX_QUANTITY'),
                             prescribing_in['rx_dose_form'].alias('RX_DOSE_FORM'),
-                            prescribing_in['rx_refills'].alias('RX_REFILLS'),
+                            prescribing_in['raw_rx_refills'].alias('RX_REFILLS'),
                             prescribing_in['rx_days_supply'].alias('RX_DAYS_SUPPLY'),
-                            prescribing_in['rx_frequency'].alias('RX_FREQUENCY'),
+                            prescribing_in['raw_rx_frequency'].alias('RX_FREQUENCY'),
                             prescribing_in['rx_prn_flag'].alias('RX_PRN_FLAG'),
-                            prescribing_in['rx_route'].alias('RX_ROUTE'),
+                            prescribing_in['raw_rx_route'].alias('RX_ROUTE'),
                             prescribing_in['rx_basis'].alias('RX_BASIS'),
-                            prescribing_in['rxnorm_cui'].alias('RXNORM_CUI'),
+                            prescribing_in['raw_rxnorm_cui'].alias('RXNORM_CUI'),
                             prescribing_in['rx_source'].alias('RX_SOURCE'),
-                            prescribing_in['rx_dispense_as_written'].alias('RX_DISPENSE_AS_WRITTEN'),
+                            lit('NI').alias('RX_DISPENSE_AS_WRITTEN'),
                             prescribing_in['raw_rx_med_name'].alias('RAW_RX_MED_NAME'),
                             prescribing_in['raw_rx_frequency'].alias('RAW_RX_FREQUENCY'),
                             prescribing_in['raw_rxnorm_cui'].alias('RAW_RXNORM_CUI'),

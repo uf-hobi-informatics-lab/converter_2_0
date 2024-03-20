@@ -1,4 +1,4 @@
-###################################################################################################################################
+##################################################################################################################################
 # This script will map a PCORNet demographic table 
 ###################################################################################################################################
 
@@ -57,20 +57,15 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-                
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
-
-
     ###################################################################################################################################
-    # Loading the unmapped enctounter table
+    # Loading the unmapped demographic table
     ###################################################################################################################################
 
-
-
-        unmapped_demographic = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_demographic.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
-
+        unmapped_demographic = cf.spark_read(formatted_data_folder_path + "formatted_demographic.csv", spark)
 
 
     ###################################################################################################################################
@@ -94,15 +89,15 @@ try:
         demographic = unmapped_demographic.select(              
             
                                     cf.encrypt_id_udf(unmapped_demographic['PATID']).alias("PATID"),
-                                    cf.get_date_from_datetime_udf(unmapped_demographic['BIRTH_DATE']).alias("BIRTH_DATE"),
-                                    cf.get_time_from_datetime_udf(unmapped_demographic['BIRTH_TIME']).alias("BIRTH_TIME"),
+                                    unmapped_demographic['BIRTH_DATE'].alias("BIRTH_DATE"),
+                                    unmapped_demographic['BIRTH_TIME'].alias("BIRTH_TIME"),
                                     mapping_sex_dict[upper(col('SEX'))].alias("SEX"),
-                                    mapping_sexual_orientation_dict[upper(col('SEXUAL_ORIENTATION'))].alias("SEXUAL_ORIENTATION"),
-                                    mapping_gender_identity_dict[upper(col('GENDER_IDENTITY'))].alias("GENDER_IDENTITY"),
-                                    mapping_hispanic_dict[upper(col('HISPANIC'))].alias("HISPANIC"),
-                                    mapping_race_dict[upper(col('RACE'))].alias("RACE"),
-                                    mapping_biobank_flag_dict[upper(col('BIOBANK_FLAG'))].alias("BIOBANK_FLAG"),
-                                    mapping_pat_pref_language_spoken_dict[upper(col('PAT_PREF_LANGUAGE_SPOKEN'))].alias("PAT_PREF_LANGUAGE_SPOKEN"),
+                                    coalesce(mapping_sexual_orientation_dict[upper(col('SEXUAL_ORIENTATION'))],col('SEXUAL_ORIENTATION')).alias("SEXUAL_ORIENTATION"),
+                                    coalesce(mapping_gender_identity_dict[upper(col('GENDER_IDENTITY'))],col('GENDER_IDENTITY')).alias("GENDER_IDENTITY"),
+                                    coalesce(mapping_hispanic_dict[upper(col('HISPANIC'))],col('HISPANIC')).alias("HISPANIC"),
+                                    coalesce(mapping_race_dict[upper(col('RACE'))],col('RACE')).alias("RACE"),
+                                    coalesce(mapping_biobank_flag_dict[upper(col('BIOBANK_FLAG'))],col('BIOBANK_FLAG')).alias("BIOBANK_FLAG"),
+                                    coalesce(mapping_pat_pref_language_spoken_dict[upper(col('PAT_PREF_LANGUAGE_SPOKEN'))],col('PAT_PREF_LANGUAGE_SPOKEN')).alias("PAT_PREF_LANGUAGE_SPOKEN"),
                                     unmapped_demographic['RAW_SEX'].alias("RAW_SEX"),
                                     unmapped_demographic['RAW_SEXUAL_ORIENTATION'].alias("RAW_SEXUAL_ORIENTATION"),
                                     unmapped_demographic['RAW_GENDER_IDENTITY'].alias("RAW_GENDER_IDENTITY"),
@@ -127,7 +122,7 @@ try:
             formatted_data_folder_path = formatted_data_folder_path,
             join_field = "PATID",
             spark = spark)
-
+ 
 
         cf.write_pyspark_output_file(
                         payspark_df = demographic_with_additional_fileds,

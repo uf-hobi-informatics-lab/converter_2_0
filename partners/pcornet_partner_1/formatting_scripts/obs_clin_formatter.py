@@ -39,9 +39,9 @@ try:
     formatter_output_data_folder_path    = f'/app/partners/{partner_name.lower()}/data/formatter_output/{input_data_folder}/'
 
 
-    obs_clin_table_name   = 'Epic_Clinical_*.txt'
+    obs_clin_table_name   = 'Epic_Clin*.txt'
 
-    obs_clin_in= spark.read.load(input_data_folder_path+obs_clin_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    obs_clin_in= spark.read.load(input_data_folder_path+obs_clin_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
     ###################################################################################################################################
 

@@ -13,6 +13,19 @@ from commonFunctions import CommonFuncitons
 import argparse
 
 
+
+def copy_and_remove_letters(val):
+    """
+    Copy values from source columns and
+    remove any letters (found in FH vitals)
+    """
+    if val is None:
+        return None
+    stripped = str(val).strip('eE').strip()
+    return stripped
+
+copy_and_remove_letters_udf = udf(copy_and_remove_letters, StringType())
+
 partner_name = 'pcornet_partner_1'
 
 cf =CommonFuncitons(partner_name.upper())
@@ -40,7 +53,7 @@ try:
 
     vital_table_name            = 'Epic_Vitals_*.txt'
 
-    vital_in = spark.read.load(input_data_folder_path+vital_table_name,format="csv", sep="~", inferSchema="true", header="true", quote= '"')
+    vital_in = spark.read.load(input_data_folder_path+vital_table_name,format="csv", sep="~", inferSchema="false", header="true", quote= '"')
 
     ###################################################################################################################################
 
@@ -59,9 +72,9 @@ try:
                         vital_in['vital_source'].alias('VITAL_SOURCE'),
                         vital_in['ht'].alias('HT'),
                         vital_in['wt'].alias('WT'),
-                        vital_in['diastolic'].alias('DIASTOLIC'),
-                        vital_in['systolic'].alias('SYSTOLIC'),
-                        vital_in['original_bmi'].alias('ORIGINAL_BMI'),
+                        copy_and_remove_letters_udf(vital_in['diastolic']).alias('DIASTOLIC'),
+                        copy_and_remove_letters_udf(vital_in['systolic']).alias('SYSTOLIC'),
+                        copy_and_remove_letters_udf(vital_in['original_bmi']).alias('ORIGINAL_BMI'),
                         vital_in['bp_position'].alias('BP_POSITION'),
                         vital_in['smoking'].alias('SMOKING'),
                         vital_in['tobacco'].alias('TOBACCO'),

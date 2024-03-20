@@ -37,7 +37,7 @@ formatter_output_data_folder_path    = '/app/partners/omop_partner_1/data/format
 
 observation_table_name            = 'Observation.txt'
 
-observation = spark.read.load(input_data_folder_path+observation_table_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
+observation = spark.read.load(input_data_folder_path+observation_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
 ht_codes = ['89269-5', '3137-7', '91370-7', 'LP415671-9', '92999-2', 'LP415672-7', '8307-1', '8308-9', '8302-2', '8306-3', '8305-5', 'LP416419-2', '8301-4', '8303-0', 'LP64598-3', '3138-5']
 

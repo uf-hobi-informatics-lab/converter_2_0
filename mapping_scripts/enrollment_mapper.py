@@ -58,7 +58,7 @@ try:
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
                 
-        formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -67,7 +67,7 @@ try:
     # Loading the unmapped enctounter table
     ###################################################################################################################################
 
-        unmapped_enrollment = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_enrollment.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
+        unmapped_enrollment    = cf.spark_read(formatted_data_folder_path+"formatted_enrollment.csv", spark)
 
 
 
@@ -87,26 +87,29 @@ try:
         enrollment = unmapped_enrollment.select(              
             
                                     cf.encrypt_id_udf(unmapped_enrollment['PATID']).alias("PATID"),
-                                    cf.get_date_from_datetime_udf(unmapped_enrollment['ENR_START_DATE']).alias("ENR_START_DATE"),
-                                    cf.get_date_from_datetime_udf(unmapped_enrollment['ENR_END_DATE']).alias("ENR_END_DATE"),
-                                    mapping_chart_dict[upper(col('CHART'))].alias("CHART"),
-                                    mapping_enr_basis_dict[upper(col('ENR_BASIS'))].alias("ENR_BASIS"),
-                                    cf.encrypt_id_udf(unmapped_enrollment['PATID']).alias("ENCRYPTED_ORIGINAL_ID"),
+                                    unmapped_enrollment['ENR_START_DATE'].alias("ENR_START_DATE"),
+                                    unmapped_enrollment['ENR_END_DATE'].alias("ENR_END_DATE"),
+                                    coalesce(mapping_chart_dict[upper(col('CHART'))],col('CHART')).alias("CHART"),
+                                    coalesce(mapping_enr_basis_dict[upper(col('ENR_BASIS'))],col('ENR_BASIS')).alias("ENR_BASIS"),
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),
-                                    unmapped_enrollment['PATID'].alias("JOIN_FIELD")
+                                    unmapped_enrollment['PATID'].alias("JOIN_FIELD"),
+
 
                                                             )
 
     ###################################################################################################################################
     # Create the output file
     ###################################################################################################################################
+
         enrollment_with_additional_fileds = cf.append_additional_fields(
             mapped_df = enrollment,
             file_name = "formatted_enrollment.csv",
             formatted_data_folder_path = formatted_data_folder_path,
             join_field = "PATID",
             spark = spark)
+ 
+
 
         cf.write_pyspark_output_file(
                         payspark_df = enrollment_with_additional_fileds,
