@@ -483,7 +483,7 @@ folders_count = len(input_data_folders)
 
 
 if 'all' in  input_jobs:
-    jobs_count = 4
+    jobs_count = 5
 else:
     jobs_count = len(input_jobs)
 
@@ -492,7 +492,12 @@ if 'all' in input_tables:
 else:
     tables_count = len(input_tables)
 
-total_jobs_count = folders_count * jobs_count * tables_count
+if 'all' in  input_jobs:
+    total_jobs_count = folders_count * jobs_count * tables_count +1 
+else:
+    total_jobs_count = folders_count * jobs_count * tables_count
+
+
 
 
 ###################################################################################################################################

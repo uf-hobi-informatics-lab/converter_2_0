@@ -466,7 +466,7 @@ class process_duplicates():
             if table in file_name_upper:
                 if len(table) > len(ret_table):
                     ret_table = table
-                    print(ret_table)
+                    # print(ret_table)
   
 
         if ret_table == "":

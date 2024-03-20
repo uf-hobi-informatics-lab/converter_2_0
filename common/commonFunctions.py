@@ -20,7 +20,7 @@ import time
 import subprocess 
 from pyspark.sql.types import StructType, StructField, StringType, NullType
 import sys
-from spark_secrets.py import * 
+from spark_secrets import * 
 from pyspark.conf import SparkConf
 import pandas as pd
 from urllib import parse
