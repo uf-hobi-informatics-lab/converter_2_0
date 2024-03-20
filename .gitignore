@@ -1,5 +1,7 @@
 #Ignore Hidden MacOS System Files
 .DS_Store
+*/*/data/
+!*/*/data_example.py
 #Ignore Sensitive Files with Keys, Passwords etc.
 common/spark_secrets.py
 # The prepending ! will make sure the example is tracked properly.
