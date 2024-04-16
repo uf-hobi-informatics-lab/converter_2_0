@@ -69,7 +69,7 @@ try:
 
     measurement_table_name   = 'measurement.csv'
 
-    measurement = spark.read.load(input_data_folder_path+measurement_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
+    omop_measurement = spark.read.load(input_data_folder_path+measurement_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
 
 
@@ -80,37 +80,37 @@ try:
 
     ###################################################################################################################################
 
-    lab_result_cm = measurement.select(             measurement['measurement_id'].alias("LAB_RESULT_CM_ID"),
-                                                    measurement['person_id'].alias("PATID"),
-                                                    measurement['visit_occurrence_id'].alias("ENCOUNTERID"),
-                                                    measurement['measurement_code'].alias("SPECIMEN_SOURCE"),
-                                                    measurement['measurement_code'].alias("LAB_LOINC"),
+    lab_result_cm = omop_measurement.select(        omop_measurement['measurement_id'].alias("LAB_RESULT_CM_ID"),
+                                                    omop_measurement['person_id'].alias("PATID"),
+                                                    omop_measurement['visit_occurrence_id'].alias("ENCOUNTERID"),
+                                                    omop_measurement['measurement_code'].alias("SPECIMEN_SOURCE"),
+                                                    omop_measurement['measurement_code'].alias("LAB_LOINC"),
                                                     lit('OD').alias("LAB_RESULT_SOURCE"),
-                                                    measurement['measurement_loinc_source'].alias("LAB_LOINC_SOURCE"),
-                                                    measurement['priority'].alias("PRIORITY"),
-                                                    get_lab_result_loc_udf(measurement['measurement_code_source_value']).alias("RESULT_LOC"),
+                                                    omop_measurement['measurement_loinc_source'].alias("LAB_LOINC_SOURCE"),
+                                                    omop_measurement['priority'].alias("PRIORITY"),
+                                                    omop_measurement['result_loc'].alias("RESULT_LOC"),
                                                     lit('').alias("LAB_PX"),
                                                     lit('').alias("LAB_PX_TYPE"),
-                                                    measurement['measurement_order_date'].alias("LAB_ORDER_DATE"),
-                                                    measurement['measurement_date'].alias("SPECIMEN_DATE"),
-                                                    get_time_from_datetime_omop_partner_1_udf(measurement['measurement_datetime']).alias("SPECIMEN_TIME"),
-                                                    measurement['measurement_date'].alias("RESULT_DATE"),
-                                                    get_time_from_datetime_omop_partner_1_udf(measurement['measurement_datetime']).alias("RESULT_TIME"),
-                                                    measurement['value_as_string'].alias("RESULT_QUAL"),
+                                                    omop_measurement['measurement_order_date'].alias("LAB_ORDER_DATE"),
+                                                    omop_measurement['measurement_date'].alias("SPECIMEN_DATE"),
+                                                    get_time_from_datetime_omop_partner_1_udf(omop_measurement['measurement_datetime']).alias("SPECIMEN_TIME"),
+                                                    omop_measurement['measurement_date'].alias("RESULT_DATE"),
+                                                    get_time_from_datetime_omop_partner_1_udf(omop_measurement['measurement_datetime']).alias("RESULT_TIME"),
+                                                    omop_measurement['value_as_string'].alias("RESULT_QUAL"),
                                                     lit('').alias("RESULT_SNOMED"),
-                                                    measurement['value_as_number'].alias("RESULT_NUM"),
-                                                    measurement['operator'].alias("RESULT_MODIFIER"),
-                                                    measurement['unit'].alias("RESULT_UNIT"),
-                                                    measurement['range_low'].alias("NORM_RANGE_LOW"),
-                                                    measurement['operator'].alias("NORM_MODIFIER_LOW"),
-                                                    measurement['range_high'].alias("NORM_RANGE_HIGH"),
-                                                    measurement['operator'].alias("NORM_MODIFIER_HIGH"),
+                                                    omop_measurement['value_as_number'].alias("RESULT_NUM"),
+                                                    omop_measurement['operator'].alias("RESULT_MODIFIER"),
+                                                    omop_measurement['unit'].alias("RESULT_UNIT"),
+                                                    omop_measurement['range_low'].alias("NORM_RANGE_LOW"),
+                                                    omop_measurement['operator'].alias("NORM_MODIFIER_LOW"),
+                                                    omop_measurement['range_high'].alias("NORM_RANGE_HIGH"),
+                                                    omop_measurement['operator'].alias("NORM_MODIFIER_HIGH"),
                                                     lit('').alias("ABN_IND"),
-                                                    measurement['measurement_code_source_value'].alias("RAW_LAB_NAME"),
-                                                    measurement['measurement_code_source_value'].alias("RAW_LAB_CODE"),
+                                                    omop_measurement['measurement_code'].alias("RAW_LAB_NAME"),
+                                                    omop_measurement['measurement_code_source_value'].alias("RAW_LAB_CODE"),
                                                     lit('').alias("RAW_PANEL"),
-                                                    measurement['measurement_code_source_value'].alias("RAW_RESULT"),
-                                                    measurement['unit_source_value'].alias("RAW_UNIT"),
+                                                    concat(col('value_as_string'), lit(' - '), col('value_as_number')).alias("RAW_RESULT"),
+                                                    omop_measurement['unit_source_value'].alias("RAW_UNIT"),
                                                     lit('').alias("RAW_ORDER_DEPT"),
                                                     lit('').alias("RAW_FACILITY_CODE"),
                                 
