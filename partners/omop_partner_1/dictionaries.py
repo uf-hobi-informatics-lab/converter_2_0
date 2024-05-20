@@ -569,8 +569,8 @@ encounter_enc_type_dict ={
 
 
 encounter_drg_type_dict = {
-    1:"01",
-    2:"02",
+    "1":"01",
+    "2":"02",
     "01":"01",
     "02":"02",
 }
@@ -3722,4 +3722,208 @@ vital_tobacco_dict ={
 }
 vital_tobacco_type_dict ={
     "":"",
+}
+
+
+#####################
+#IMMUNIZATION
+#####################
+immunization_vx_code_type_dict = {
+
+
+	"CVX":"CX",
+
+}
+immunization_vx_status_dict = {
+
+
+	"ND":"ND",
+	"CP":"CP",
+
+}
+immunization_vx_status_reason_dict = {
+
+
+	"MP":"MP",
+	"PO":"PO",
+
+}
+immunization_vx_source_dict = {
+
+
+	"DR":"DR",
+
+}
+immunization_vx_dose_unit_dict = {
+
+
+	"ML/HR":"mL/h",
+	"NG":"ng",
+	"MILLI-UNITS/ML":"OT",
+	"PRODUCT":"OT",
+	"INT'L UNITS/HR":"[IU]/h",
+	"BAU/MIN":"OT",
+	"FLUID OUNCE":"[foz_us]",
+	"MCL":"uL",
+	"INCH/KG":"OT",
+	"INT'L UNITS/KG":"[IU]/kg",
+	"SPRAY":"OT",
+	"IMPERIAL GALLON":"[gal_us]",
+	"MCL/ML":"OT",
+	"MG/L":"mg/L",
+	"BAU/DAY":"OT",
+	"KJ/100 ML":"OT",
+	"M":"m",
+	"MG PE/DAY":"OT",
+	"INT'L UNITS/1.7M2":"OT",
+	"BOTTLE":"OT",
+	"KBQ/MIN":"OT",
+	"INT'L UNITS/DAY":"[IU]/d",
+	"APPLICATORFUL":"OT",
+	"OZ":"[oz_av]",
+	"L":"L",
+	"MCL/L":"OT",
+	"TABLET":"OT",
+	"ML/L":"OT",
+	"APPLICATOR":"OT",
+	"INT'L UNITS/ML":"[IU]/mL",
+	"MG/ML":"mg/mL",
+	"DROP":"[drp]",
+	"G/ML":"g/mL",
+	"BAU/100 ML":"OT",
+	"CAPSULE":"OT",
+	"L/ML":"OT",
+	"ML/ML":"OT",
+	"APPLICATION.":"OT",
+	"PG":"pg",
+	"INT'L UNITS/L":"[IU]/L",
+	"GRAM":"g",
+	"AMPULE":"OT",
+	"MCG/ML":"mcg/mL",
+	"ML/1.7M2":"OT",
+	"DOSE":"OT",
+	"KIT":"OT",
+	"VIAL":"OT",
+	"SYRINGE":"OT",
+	"%":"%",
+	"INT'L UNITS":"[IU]",
+	"UNITS":"U",
+	"EACH":"OT",
+	"DEVICE":"OT",
+	"MCG":"ug",
+	"MG":"mg",
+	"DOSE PACK":"OT",
+	"ML":"mL",
+	"":"",
+
+}
+immunization_vx_route_dict = {
+
+
+	"SUBLINGUAL":"SUBLINGUAL",
+	"OTHER/MISCELLANEOUS":"",
+	"INTRAVENOUS":"INTRAVENOUS",
+	"TRANSDERMAL":"TRANSDERMAL",
+	"NASAL":"NASAL",
+	"INTRANASAL":"NASAL",
+	"ORAL":"ORAL",
+	"INTRADERMAL":"INTRADERMAL",
+	"":"",
+	"SUBCUTANEOUS":"SUBCUTANEOUS",
+	"INTRAMUSCULAR":"INTRAMUSCULAR",
+
+}
+immunization_vx_body_site_dict = {
+
+
+	"RIGHT UPPER QUAD. ABDOMEN":"OT",
+	"LEFT UPPER QUAD. ABDOMEN":"LUAQ",
+	"LEFT LOWER QUAD. ABDOMEN":"LLAQ",
+	"RIGHT LOWER QUAD. ABDOMEN":"RLAQ",
+	"RIGHT GLUTEOUS MEDIUS":"RG",
+	"LEFT GLUTEOUS MEDIUS":"LG",
+	"LEFT UPPER QUAD. GLUTEUS":"OT",
+	"RIGHT UPPER QUAD. GLUTEUS":"OT",
+	"RIGHT LOWER FOREARM":"RLFA",
+	"RIGHT QUADRICEPS":"OT",
+	"INTRANASAL":"OT",
+	"RIGHT THIGH":"RT",
+	"LEFT QUADRICEPS":"OT",
+	"LEFT THIGH":"LT",
+	"RIGHT UPPER ARM":"RUA",
+	"OTHER":"OT",
+	"RIGHT ARM":"RA",
+	"LEFT LOWER FOREARM":"LLFA",
+	"RIGHT VASTUS LATERALIS":"RVL",
+	"LEFT UPPER ARM":"LUA",
+	"LEFT VASTUS LATERALIS":"LVL",
+	"LEFT ARM":"LA",
+	"RIGHT DELTOID":"RD",
+	"LEFT DELTOID":"LD",
+
+}
+
+immunization_vx_manufacturer_dict = {
+
+	"ABBOTT LABORATORIES":"AB",
+	"ADAMS LABORATORIES INC":"AD",
+	"AKORN, INC.":"AKR",
+	"ALPHA THERAPEUTIC CORP":"ALP",
+	"ASTRAZENECA":"ASZ",
+	"AVENTIS BEHRING L.L.C.":"AVB",
+	"AVIRON":"AVI",
+	"BARR LABORATORIES":"BRR",
+	"BAVARIAN NORDIC":"BN",
+	"BAXTER HEALTHCARE CORP":"BA",
+	"BAYER CORPORATION":"BAY",
+	"BERNA PRODUCTS CORP":"BPC",
+	"BHARAT BIOTECH (COVAXIN)":"OT",
+	"BIKEN":"JPN",
+	"BIOCSL":"CSL",
+	"BIOTEST PHARMACEUTICALS CORPORATION":"BTP",
+	"CHIRON CORPORATION":"CHI",
+	"CONNAUGHT":"CON",
+	"DYNPORT VACCINE CO. LLC":"DYN",
+	"EMERGENT BIODEFENSE OPERATIONS LANSING":"OT",
+	"EVANS MEDICAL LIMITED":"EVN",
+	"GAMELAYA (SPUTNIK V)":"OT",
+	"GEOVAX LABS INC":"GEO",
+	"GLAXOSMITHKLINE":"SKB",
+	"GREER LABORATORIES INC":"GRE",
+	"GRIFOLS":"GRF",
+	"ID BIOMEDICAL":"IDB",
+	"IMUNO-U.S. INC":"OT",
+	"INTERCELL BIOMEDICAL":"INT",
+	"JHP PHARMACEUTICALS":"OTH",
+	"JOHNSON AND JOHNSON":"JNJ",
+	"KEDRIAN BIOPHARMA":"KED",
+	"LEDERLE":"LED",
+	"MASSACHUSETTS BIOLOGIC LABORATORIES":"MBL",
+	"MEDIMMUNE INC":"MED",
+	"MERCK & CO. INC":"MSD",
+	"MERCK SHARP & DOHME CORP":"OT",
+	"MODERNA US INC":"MOD",
+	"NABI":"NAB",
+	"NEW YORK BLOOD CENTER":"NYB",
+	"NOVARTIS PHARMACEUTICAL CORP":"NOV",
+	"NOVAVAX INC":"NVX",
+	"ORGANON TEKNIKA CORP":"OT",
+	"ORTHO-CLINICAL DIAGNOSTICS":"ORT",
+	"OTHER MANUFACTURER":"OTH",
+	"PAXVAX":"PAX",
+	"PFIZER, INC.":"PFR",
+	"PROTEIN SCIENCES":"PSC",
+	"SANOFI PASTEUR":"PMC",
+	"SCLAVO INC":"SCL",
+	"SEQIRUS":"SEQ",
+	"SINOPHARM-BEIJING":"OT",
+	"SINOVAC":"OTH",
+	"TALECRIS BIOTHERAPEUTICS":"TAL",
+	"UNKNOWN MANUFACTURER":"UNK",
+	"VALNEVA":"VAL",
+	"VECTOR INSTITUTE (EPIVACCORONA)":"OT",
+	"WYETH-AYERST":"WAL",
+	"WYETH":"WA",
+	"ZLB BEHRING":"ZLB",
+
 }
