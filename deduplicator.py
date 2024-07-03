@@ -91,7 +91,7 @@ class process_duplicates():
             if folder_name == 'partners':
                 self.display_partner_name = split_path_names[j+1]
                 break
-        self.display_python_name = f'{self.display_table_name}_deduplicator.py'
+        self.display_python_name = f'deduplicating: {self.display_table_name}'
         self.cf =CommonFuncitons(self.display_partner_name)
         if 'all' in input_tables:
             self.input_tables.append('all')
@@ -137,7 +137,6 @@ class process_duplicates():
                                                    ('PCORNET_TRIAL', ['PATID', 'TRIALID', 'PARTICIPANTID']),
                                                    ('PRESCRIBING_ORG', ['PRESCRIBINGID']),
                                                    ('PRO_CM_ORG', ['PRO_CM_ID']),
-                                                   ('LDS_ADDRESS_HX', ['ADDRESSID']),
                                                    ('PROCEDURES_ORG', ['PROCEDURESID']),
                                                    ('PROVIDER_ORG', ['PROVIDERID']),
                                                    ('VITAL_ORG', ['VITALID']),
@@ -198,9 +197,10 @@ class process_duplicates():
         self.cf.print_failure_message(
             folder=self.display_folder_name,
             partner=self.display_partner_name,
-            job=self.display_python_name)
-        self.cf.print_with_style(display_msg, 'danger red')
-        exit()
+            job=self.display_python_name,
+            text=display_msg)
+        # self.cf.print_with_style(display_msg, 'danger red')
+        # exit()
 
     # find the csv file delimiter
     def find_delimeter(self, file_path):
@@ -350,105 +350,105 @@ class process_duplicates():
     # huge file processing using spark interface
     def dedup_using_spark(self, file_path, output_file_path, file):
         start_time = time()
-        try:
-            file_summary = "File_Summary_for_" + file
-            logging.info("STARTING dedup_using_spark({})".format(file))
-            delimiter = self.find_delimeter(file_path)
-            table = self.get_table_name(file_path, file)
-            if table == "":
-                return 'Ignoring file without Unique Keys'             # there are no keys found for this table
-            self.results_info[self.if_name][file][process_duplicates.PD_TABLE] = table
-            temp_view = "tempdb"
-            keys = self.ids_info[table]
-            group_keys_str = self.get_group_keys_str(keys)
-            test_time = time()
-            # get the csv file into a spark dataframe
-            logging.info("START dedup_using_spark read CSV FILE {}".format(file_path))
-            df_all = self.spark.read.csv(file_path, sep=delimiter, header=True)
-            all_rows_cnt = df_all.count()
-            logging.info("FINISH dedup_using_spark read CSV FILE ({:,} rows), file_path={}, delimiter={}, took {}".format(all_rows_cnt, file_path, delimiter, format(datetime.timedelta(seconds=int(time() - test_time)))))
-            test_time = time()
-            # create a view that can be accesses with SQL commands
-            logging.info("START dedup_using_spark createOrReplaceTempView")
-            df_all.createOrReplaceTempView(temp_view)
-            logging.info("FINISH dedup_using_spark createOrReplaceTempView({}), took {}".format(temp_view, format(datetime.timedelta(seconds=int(time() - test_time)))))
-            test_time = time()
-            # get dataframe with duplicates dropped
-            logging.info("START dedup_using_spark dropDuplicates Keys {}".format(keys))
-            df_unique = df_all.dropDuplicates(keys)
-            unique_rows_cnt = df_unique.count()
-            logging.info("FINISH dedup_using_spark dropDuplicates({}), ({:,} rows), took {}".format(keys, unique_rows_cnt, format(datetime.timedelta(seconds=int(time() - test_time)))))
-            test_time = time()
-            # get list of duplicates with number of times each key is duplicated
-            logging.info("START dedup_using_spark Get Duplicate Keys Counts")
-            dups_df = self.spark.sql("SELECT {}, COUNT(*) as cnt FROM {} GROUP BY {} HAVING COUNT(*) > 1".format(group_keys_str, temp_view, group_keys_str))
-            dups_keys_cnt = dups_df.count()
-            duplicate_rows = all_rows_cnt - unique_rows_cnt
-            logging.info("FINISH dedup_using_spark Get Duplicate Keys Counts {:,} Duplicate Keys, {:,} Duplicate rows removed, took {}".format(dups_keys_cnt, duplicate_rows, format(datetime.timedelta(seconds=int(time() - test_time)))))
-            test_time = time()
-            # save the csv file that has the duplicates removed
+        # try:
+        file_summary = "File_Summary_for_" + file
+        logging.info("STARTING dedup_using_spark({})".format(file))
+        delimiter = self.find_delimeter(file_path)
+        table = self.get_table_name(file_path, file)
+        if table == "":
+            return 'Ignoring file without Unique Keys'             # there are no keys found for this table
+        self.results_info[self.if_name][file][process_duplicates.PD_TABLE] = table
+        temp_view = "tempdb"
+        keys = self.ids_info[table]
+        group_keys_str = self.get_group_keys_str(keys)
+        test_time = time()
+        # get the csv file into a spark dataframe
+        logging.info("START dedup_using_spark read CSV FILE {}".format(file_path))
+        df_all = self.spark.read.csv(file_path, sep=delimiter, header=True)
+        all_rows_cnt = df_all.count()
+        logging.info("FINISH dedup_using_spark read CSV FILE ({:,} rows), file_path={}, delimiter={}, took {}".format(all_rows_cnt, file_path, delimiter, format(datetime.timedelta(seconds=int(time() - test_time)))))
+        test_time = time()
+        # create a view that can be accesses with SQL commands
+        logging.info("START dedup_using_spark createOrReplaceTempView")
+        df_all.createOrReplaceTempView(temp_view)
+        logging.info("FINISH dedup_using_spark createOrReplaceTempView({}), took {}".format(temp_view, format(datetime.timedelta(seconds=int(time() - test_time)))))
+        test_time = time()
+        # get dataframe with duplicates dropped
+        logging.info("START dedup_using_spark dropDuplicates Keys {}".format(keys))
+        df_unique = df_all.dropDuplicates(keys)
+        unique_rows_cnt = df_unique.count()
+        logging.info("FINISH dedup_using_spark dropDuplicates({}), ({:,} rows), took {}".format(keys, unique_rows_cnt, format(datetime.timedelta(seconds=int(time() - test_time)))))
+        test_time = time()
+        # get list of duplicates with number of times each key is duplicated
+        logging.info("START dedup_using_spark Get Duplicate Keys Counts")
+        dups_df = self.spark.sql("SELECT {}, COUNT(*) as cnt FROM {} GROUP BY {} HAVING COUNT(*) > 1".format(group_keys_str, temp_view, group_keys_str))
+        dups_keys_cnt = dups_df.count()
+        duplicate_rows = all_rows_cnt - unique_rows_cnt
+        logging.info("FINISH dedup_using_spark Get Duplicate Keys Counts {:,} Duplicate Keys, {:,} Duplicate rows removed, took {}".format(dups_keys_cnt, duplicate_rows, format(datetime.timedelta(seconds=int(time() - test_time)))))
+        test_time = time()
+        # save the csv file that has the duplicates removed
+        logging.info("START dedup_using_spark Save CSV File {}".format(self.temp_generated_file_path))
+        df_unique.coalesce(1).write.mode("overwrite").option("header", True).option("delimiter", delimiter).csv(self.temp_generated_file_path)
+        self.rename_temp_spark_file(file, self.generated_deduplicates_path)
+        logging.info("FINISH dedup_using_spark Save CSV File {}, took {}".format(self.generated_deduplicates_path, format(datetime.timedelta(seconds=int(time() - test_time)))))
+        test_time = time()
+        # save the csv file that has with number of times each key is duplicated (only if there are duplicates)
+        if dups_keys_cnt > 0:       # only make file if there are duplicates
             logging.info("START dedup_using_spark Save CSV File {}".format(self.temp_generated_file_path))
-            df_unique.coalesce(1).write.mode("overwrite").option("header", True).option("delimiter", delimiter).csv(self.temp_generated_file_path)
-            self.rename_temp_spark_file(file, self.generated_deduplicates_path)
-            logging.info("FINISH dedup_using_spark Save CSV File {}, took {}".format(self.generated_deduplicates_path, format(datetime.timedelta(seconds=int(time() - test_time)))))
-            test_time = time()
-            # save the csv file that has with number of times each key is duplicated (only if there are duplicates)
-            if dups_keys_cnt > 0:       # only make file if there are duplicates
-                logging.info("START dedup_using_spark Save CSV File {}".format(self.temp_generated_file_path))
-                dups_df.coalesce(1).write.mode("overwrite").option("header", True).option("delimiter", delimiter).csv(self.temp_generated_file_path)
-                self.rename_temp_spark_file(file_summary, self.generated_duplicates_path)
-                logging.info("FINISH dedup_using_spark Save CSV File {}, took {}".format(self.generated_duplicates_path, format(datetime.timedelta(seconds=int(time() - test_time)))))
-                if self.generate_duplicate_detail_file:
-                    test_time = time()
-                    logging.info("START dedup_using_spark Save DETAIL CSV File {}".format(self.temp_generated_file_path))
-                    row_index = 0
-                    rows_written = 0
-                    max_detail_msg = ''
-                    test_dup_time = time()
-                    for row in dups_df.rdd.toLocalIterator():
-                        where_str = ''
-                        for key_index, key_name in enumerate(keys):
-                            if row[key_name] is None:
-                                continue                # ignore none
-                            if where_str != '':
-                                where_str += " AND "
-                            where_str += " {}='{}'".format(key_name, row[key_name])
-                        query = "SELECT * FROM {} WHERE {}".format(temp_view, where_str)
-                        if row_index == 0:
-                            detail_dups_df = self.spark.sql(query)
-                            dup_cnt = detail_dups_df.count()
-                            #detail_dups_df.coalesce(1).write.mode("overwrite").option("header", True).option("delimiter", delimiter).csv(self.temp_generated_file_path)
-                        else:
-                            temp_df = self.spark.sql(query)
-                            dup_cnt = temp_df.count()
-                            #temp_df.coalesce(1).write.mode("append").option("header", True).option("delimiter", delimiter).csv(self.temp_generated_file_path)
-                            detail_dups_df = detail_dups_df.union(temp_df)
-                        rows_written += dup_cnt
-                        row_index += 1
-                        if (row_index % 100) == 0:
-                            logging.info("dedup_using_spark processed {} Duplicates to Detail CSV File, Total rows {}, took {}".format(row_index, rows_written, format(datetime.timedelta(seconds=int(time() - test_dup_time)))))
-                            test_dup_time = time()
-                        if rows_written > self.max_duplicate_detail_rows:
-                            max_detail_msg = f"Only showing {rows_written} rows to DETAIL CSV File because (MAX IS {self.max_duplicate_detail_rows})"
-                            logging.info(f"{max_detail_msg}")
-                            break
-                    detail_dups_df.coalesce(1).write.mode("overwrite").option("header", True).option("delimiter", delimiter).csv(self.temp_generated_file_path)
-                    self.rename_temp_spark_file(file, self.generated_duplicates_path)
-                    if max_detail_msg != '':
-                        detail_name = f'{self.generated_duplicates_path}{os.sep}{file}'
-                        fh = open(detail_name, 'a')
-                        fh.write(f'{max_detail_msg}')          # append max message to end ofCSV file
-                        fh.close()
-                    logging.info("FINISH dedup_using_spark Dup DETAIL Save CSV File {} with {} rows, took {}".format(self.generated_duplicates_path, rows_written, format(datetime.timedelta(seconds=int(time() - test_time)))))
-            #test_time = time()
-            # save the detailed csv file with duplicates information
-            #df_empty = df_all.limit(0)
-            logging.info("FINISHED dedup_using_spark({}), took {}".format(file, datetime.timedelta(seconds=int(time() - start_time))))
+            dups_df.coalesce(1).write.mode("overwrite").option("header", True).option("delimiter", delimiter).csv(self.temp_generated_file_path)
+            self.rename_temp_spark_file(file_summary, self.generated_duplicates_path)
+            logging.info("FINISH dedup_using_spark Save CSV File {}, took {}".format(self.generated_duplicates_path, format(datetime.timedelta(seconds=int(time() - test_time)))))
+            if self.generate_duplicate_detail_file:
+                test_time = time()
+                logging.info("START dedup_using_spark Save DETAIL CSV File {}".format(self.temp_generated_file_path))
+                row_index = 0
+                rows_written = 0
+                max_detail_msg = ''
+                test_dup_time = time()
+                for row in dups_df.rdd.toLocalIterator():
+                    where_str = ''
+                    for key_index, key_name in enumerate(keys):
+                        if row[key_name] is None:
+                            continue                # ignore none
+                        if where_str != '':
+                            where_str += " AND "
+                        where_str += " {}='{}'".format(key_name, row[key_name])
+                    query = "SELECT * FROM {} WHERE {}".format(temp_view, where_str)
+                    if row_index == 0:
+                        detail_dups_df = self.spark.sql(query)
+                        dup_cnt = detail_dups_df.count()
+                        #detail_dups_df.coalesce(1).write.mode("overwrite").option("header", True).option("delimiter", delimiter).csv(self.temp_generated_file_path)
+                    else:
+                        temp_df = self.spark.sql(query)
+                        dup_cnt = temp_df.count()
+                        #temp_df.coalesce(1).write.mode("append").option("header", True).option("delimiter", delimiter).csv(self.temp_generated_file_path)
+                        detail_dups_df = detail_dups_df.union(temp_df)
+                    rows_written += dup_cnt
+                    row_index += 1
+                    if (row_index % 100) == 0:
+                        logging.info("dedup_using_spark processed {} Duplicates to Detail CSV File, Total rows {}, took {}".format(row_index, rows_written, format(datetime.timedelta(seconds=int(time() - test_dup_time)))))
+                        test_dup_time = time()
+                    if rows_written > self.max_duplicate_detail_rows:
+                        max_detail_msg = f"Only showing {rows_written} rows to DETAIL CSV File because (MAX IS {self.max_duplicate_detail_rows})"
+                        logging.info(f"{max_detail_msg}")
+                        break
+                detail_dups_df.coalesce(1).write.mode("overwrite").option("header", True).option("delimiter", delimiter).csv(self.temp_generated_file_path)
+                self.rename_temp_spark_file(file, self.generated_duplicates_path)
+                if max_detail_msg != '':
+                    detail_name = f'{self.generated_duplicates_path}{os.sep}{file}'
+                    fh = open(detail_name, 'a')
+                    fh.write(f'{max_detail_msg}')          # append max message to end ofCSV file
+                    fh.close()
+                logging.info("FINISH dedup_using_spark Dup DETAIL Save CSV File {} with {} rows, took {}".format(self.generated_duplicates_path, rows_written, format(datetime.timedelta(seconds=int(time() - test_time)))))
+        #test_time = time()
+        # save the detailed csv file with duplicates information
+        #df_empty = df_all.limit(0)
+        logging.info("FINISHED dedup_using_spark({}), took {}".format(file, datetime.timedelta(seconds=int(time() - start_time))))
             #jim = 1/ 0     # test to force exception
-        except Exception as e:
-            display_msg = str(e)
-            log_msg = "ERROR dedup_using_spark Error={}".format(str(e))
-            self.display_error_message_and_exit(display_msg, log_msg)
+        # except Exception as e:
+        #     display_msg = str(e)
+        #     log_msg = "ERROR dedup_using_spark Error={}".format(str(e))
+        #     self.display_error_message_and_exit(display_msg, log_msg)
         return
 
     # de duplicate the txt/csv file
@@ -460,15 +460,11 @@ class process_duplicates():
     # get the table name from the list of tables with key values (by matching the name with part of the filename string)
     def get_table_name(self, file_path, file_name):
         file_name_upper = file_name.upper()
-
         ret_table = ""
         for table in self.ids_info:
             if table in file_name_upper:
                 if len(table) > len(ret_table):
                     ret_table = table
-                    # print(ret_table)
-  
-
         if ret_table == "":
             log_msg = "ERROR get_table_name for ({}) does not exist in self.ids_info = collections.OrderedDict".format(file_name)
             display_msg = "get_table_name for ({}) does not exist".format(file_name)
@@ -535,45 +531,45 @@ class process_duplicates():
 
 # main function for executing the duplicates
 def main(input_data_folder, output_data_folder, table):
-    try:
-        main_start_time = time()
-        log_name = ""
-        if _platform == "linux":
-            log_name += 'process_duplicates.log'
-        if os.path.exists(log_name):
-            os.remove(log_name)
-        logging.basicConfig(level=logging.INFO,
-                            format='%(asctime)s %(levelname)-8s %(message)s',
-                            datefmt='%m-%d %H:%M',
-                            filename=log_name,
-                            filemode='a')
-        if input_data_folder == '' or input_data_folder == None or output_data_folder == '' or output_data_folder == None or table == '' or table == None:
-            message = "PARAM ERROR '{}', should be '-f input_folder -of output_folder -t table', Exiting program".format(sys.argv)
-            logging.error(message)
-            exit()
-        using_spark = True         # test only
-        if using_spark:
-            #conf = SparkConf()
-            #if 'SPARK_HOME' not in os.environ:
-            #    os.environ['SPARK_HOME'] = spark_home
-            spark = SparkSession \
-                .builder \
-                .appName("Process Duplicates") \
-                .getOrCreate()
-            spark_version = spark.version
-        else:
-            spark= 0
-        pd = process_duplicates(input_data_folder, output_data_folder, table, spark)
-        pd.run()
-        if using_spark:
-            spark.stop()
+    # try:
+    main_start_time = time()
+    log_name = ""
+    if _platform == "linux":
+        log_name += 'process_duplicates.log'
+    if os.path.exists(log_name):
+        os.remove(log_name)
+    # logging.basicConfig(level=logging.INFO,
+    #                     format='%(asctime)s %(levelname)-8s %(message)s',
+    #                     datefmt='%m-%d %H:%M',
+    #                     filename=log_name,
+    #                     filemode='a')
+    if input_data_folder == '' or input_data_folder == None or output_data_folder == '' or output_data_folder == None or table == '' or table == None:
+        message = "PARAM ERROR '{}', should be '-f input_folder -of output_folder -t table', Exiting program".format(sys.argv)
+        logging.error(message)
+        exit()
+    using_spark = True         # test only
+    if using_spark:
+        #conf = SparkConf()
+        #if 'SPARK_HOME' not in os.environ:
+        #    os.environ['SPARK_HOME'] = spark_home
+        spark = SparkSession \
+            .builder \
+            .appName("Process Duplicates") \
+            .getOrCreate()
+        spark_version = spark.version
+    else:
+        spark= 0
+    pd = process_duplicates(input_data_folder, output_data_folder, table, spark)
+    pd.run()
+    if using_spark:
+        spark.stop()
         logging.info("FINISHED deduplicator.py for Folder {}, took {}".format(input_data_folder, format(datetime.timedelta(seconds=int(time() - main_start_time)))))
 
-    except Exception as e:
-        log_msg = "Process Duplicates ERROR Error={}".format(str(e))
-        display_msg = str(e)
-        self.display_error_message_and_exit(display_msg, log_msg)
-        exit()
+    # except Exception as e:
+    #     log_msg = "Process Duplicates ERROR Error={}".format(str(e))
+    #     display_msg = str(e)
+    #     self.display_error_message_and_exit(display_msg, log_msg)
+    #     exit()
 
 # program to check duplicates
 #command = ["python", "/app/partners/"+partner+"/formatting_scripts/"+formatter, '-f', folder ]
