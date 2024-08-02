@@ -18,9 +18,10 @@ spark.stop()
 
 print("""
 
-                            ▄█  ░█▀▀▀ ░█    　 ░█▀▀█ ░█▀▀▀█ ░█▄ ░█ ░█  ░█ ░█▀▀▀ ░█▀▀█ ▀▀█▀▀ ░█▀▀▀ ░█▀▀█ 　 █▀█   █▀▀█ 
-                             █  ░█▀▀▀ ░█    　 ░█    ░█  ░█ ░█░█░█  ░█░█  ░█▀▀▀ ░█▄▄▀  ░█   ░█▀▀▀ ░█▄▄▀ 　  ▄▀   █  █ 
-                            ▄█▄ ░█    ░█▄▄█ 　 ░█▄▄█ ░█▄▄▄█ ░█  ▀█   ▀▄▀  ░█▄▄▄ ░█ ░█  ░█   ░█▄▄▄ ░█ ░█ 　 █▄▄ ▄ █▄▄█                                                                                                                                            
+                            ▄█  ░█▀▀▀ ░█       ░█▀▀█ ░█ ░█  █▀▀█ ░█▄ ░█ ░█▀▀█ ░█▀▀▀ ▀█▀ ░█▄ ░█  █▀▀█ ▀▀█▀▀ ░█▀▀▀█ ░█▀▀█ 
+                             █  ░█▀▀▀ ░█    ▀▀ ░█    ░█▀▀█ ░█▄▄█ ░█░█░█ ░█ ▄▄ ░█▀▀▀ ░█  ░█░█░█ ░█▄▄█  ░█   ░█  ░█ ░█▄▄▀ 
+                            ▄█▄ ░█    ░█▄▄█    ░█▄▄█ ░█ ░█ ░█ ░█ ░█  ▀█ ░█▄▄█ ░█▄▄▄ ▄█▄ ░█  ▀█ ░█ ░█  ░█   ░█▄▄▄█ ░█ ░█
+
                                                                                                                                                             
                                                                               """
                                                    )
@@ -79,6 +80,23 @@ def get_partner_formatters_list(partner):
 
     return partner_formatters_list
 
+
+
+
+###################################################################################################################################
+# This function will get all the created formatter python script and return a list of thier names
+# This function will get all the created formatter python script and return a list of thier names
+###################################################################################################################################
+def get_partner_fixers_list(partner):
+
+    folder_path = '/app/partners/'+partner.lower()+'/fixer_scripts/'
+    suffix = 'fixer.py' 
+    file_names = os.listdir(folder_path)
+
+    partner_fixers_list = [file for file in file_names if file.endswith(suffix)]
+
+    return partner_fixers_list
+
 ###################################################################################################################################
 # This function will get all the created mappers python script and return a list of thier names
 # This function will get all the created mappers python script and return a list of thier names
@@ -102,12 +120,12 @@ def get_partner_mappers_list():
 def get_partner_uploads_list(folder_path):
 
        
-        prefix = 'mapped_' 
+        prefix = 'fixed_' 
         file_names = os.listdir(folder_path)
 
-        mapped_tables_list = [file for file in file_names if file.startswith(prefix)]
+        fixed_tables_list = [file for file in file_names if file.startswith(prefix)]
 
-        return mapped_tables_list
+        return fixed_tables_list
 
 
 
@@ -147,46 +165,24 @@ def run_formatter(partner, formatter, folder):
     # Execute the command
     subprocess.run(" ".join(command), shell=True)
 
+
+
 ###################################################################################################################################
-# This function will run the deduplicator script for a single table
+# This function will run the formatter script for a single table
 ###################################################################################################################################
 
-def run_deduplicator(partner, input_folder, output_folder):
+def run_fixer(partner, fixer, folder):
 
     global job_num
 
-    # process duplicates for each tablle
-    for table in input_tables:
-        job_num = job_num +1
-        cf.print_run_status(job_num, total_jobs_count, f'{table}_deduplicator.py', os.path.split(input_folder)[1], partner)
+    job_num = job_num +1
+    cf.print_run_status(job_num,total_jobs_count,fixer, folder, partner)
 
-        command = ["python", "/app/deduplicator.py", '-f', input_folder, '-of', output_folder , '-t' ]
 
-        # add table list
-        command.append(table)
+    command = ["python", "/app/partners/"+partner+"/fixer_scripts/"+fixer, '-f', folder ]
+    # Execute the command
+    subprocess.run(" ".join(command), shell=True)
 
-        # Execute the command
-        subprocess.run(" ".join(command), shell=True)
-###################################################################################################################################
-# This function will run the deduplicator script for a single table
-###################################################################################################################################
-
-def run_deduplicator(partner, input_folder, output_folder):
-
-    global job_num
-
-    # process duplicates for each tablle
-    for table in input_tables:
-        job_num = job_num +1
-        cf.print_run_status(job_num, total_jobs_count, f'{table}_deduplicator.py', os.path.split(input_folder)[1], partner)
-
-        command = ["python", "/app/deduplicator.py", '-f', input_folder, '-of', output_folder , '-t' ]
-
-        # add table list
-        command.append(table)
-
-        # Execute the command
-        subprocess.run(" ".join(command), shell=True)
 
 ###################################################################################################################################
 # This function will run the mapper script for a single table
@@ -227,25 +223,86 @@ def run_formatters_jobs(folder):
             formatter = table.lower()+"_formatter.py"
             run_formatter(input_partner,formatter, folder)
 
+
 ###################################################################################################################################
-# This function will run the deduplicators script
+# This function will run the formatter scripts specified by the user
+# This function will run the formatter scripts specified by the user
 ###################################################################################################################################
+def run_fixers_jobs(folder):
+
+    global total_fixers_count
+    if 'all' in input_tables:
+
+        partner_fixers_list = get_partner_fixers_list(input_partner)
+
+        total_fixers_count = len(partner_fixers_list)
+
+        for fixer  in partner_fixers_list:
+            run_fixer(input_partner,fixer,folder)
+            
+    else:
+
+        for table in input_tables:
+
+            fixer = table.lower()+"_fixer.py"
+            run_fixer(input_partner,fixer, folder)
+
+
+
+###################################################################################################################################
+# This function will get all the list names of all the mapped files
+###################################################################################################################################
+
+
+
+###################################################################################################################################
+
+
 def run_deduplicator_jobs(folder):
 
-    formatter_output_data_folder_path = f'/app/partners/{input_partner}/data/formatter_output/{folder}'
-    deduplicator_output_data_folder_path = formatter_output_data_folder_path.replace('formatter_output', 'deduplicator_output')
-    run_deduplicator(input_partner, formatter_output_data_folder_path, deduplicator_output_data_folder_path)
+    formatted_files_list_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+folder+"/"
 
 
-###################################################################################################################################
-# This function will run the deduplicators script
-###################################################################################################################################
-def run_deduplicator_jobs(folder):
+    global total_uploads_count
+    global job_num
 
-    formatter_output_data_folder_path = f'/app/partners/{input_partner}/data/formatter_output/{folder}'
-    deduplicator_output_data_folder_path = formatter_output_data_folder_path.replace('formatter_output', 'deduplicator_output')
-    run_deduplicator(input_partner, formatter_output_data_folder_path, deduplicator_output_data_folder_path)
+    if 'all' in input_tables:
 
+        formatted_files_list = get_partner_formatted_files_list(formatted_files_list_path)
+        # total_uploads_count = len(partner_uploads_list)
+
+        
+
+        for file_name  in formatted_files_list:
+
+            table_name = file_name.replace('formatted_',"").replace('.csv',"")
+
+            job_num = job_num +1
+            cf.print_run_status(job_num,total_jobs_count, f"deduplicating {file_name}", folder, input_partner)
+
+            cf.deduplicate(
+                         partner = input_partner,
+                         file_name=table_name.upper(), 
+                         table_name = table_name.upper(),
+                         file_path= formatted_files_list_path,
+                         folder_name = folder
+                          )
+    else:
+
+        for table in input_tables:
+            formatted_table_name = "formatted_"+table.lower()+".csv"
+
+            job_num = job_num +1
+            cf.print_run_status(job_num,total_jobs_count, f"deduplicating {formatted_table_name}", folder, input_partner)
+
+
+            cf.deduplicate(
+                         partner = input_partner,
+                         file_name=table.upper(),
+                         table_name = table.upper(),
+                         file_path= formatted_files_list_path,
+                         folder_name = folder
+                          )
 ###################################################################################################################################
 # This function will run the mapper scripts specified by the user
 # This function will run the mapper scripts specified by the user
@@ -294,7 +351,7 @@ def run_mapping_gap_jobs(folder):
             table_name = file_name.replace('formatted_',"").replace('.csv',"")
 
             job_num = job_num +1
-            cf.print_run_status(job_num,total_jobs_count, f"mapping gaps for  {file_name}", folder, input_partner)
+            cf.print_run_status(job_num,total_jobs_count, f"mapping gap for {file_name}", folder, input_partner)
 
             cf.get_mapping_gap(
                          partner = input_partner,
@@ -309,7 +366,7 @@ def run_mapping_gap_jobs(folder):
             formatted_table_name = "formatted_"+table.lower()+".csv"
 
             job_num = job_num +1
-            cf.print_run_status(job_num,total_jobs_count, f"mapping gaps for  {formatted_table_name}", folder, input_partner)
+            cf.print_run_status(job_num,total_jobs_count, f"mapping gap for  {formatted_table_name}", folder, input_partner)
 
 
             cf.get_mapping_gap(
@@ -327,7 +384,7 @@ def run_mapping_gap_jobs(folder):
 
 def run_mapping_report_job(folder):
 
-    mapping_gaps_output_folder_path = '/app/partners/'+input_partner.lower()+'/data/mapping_gaps_output/'+folder+"/"
+    mapping_gap_output_folder_path = '/app/partners/'+input_partner.lower()+'/data/mapping_gap_output/'+folder+"/"
 
     global total_uploads_count 
     global job_num
@@ -338,7 +395,7 @@ def run_mapping_report_job(folder):
 
     cf.generate_mapping_report(
 
-        mapping_gaps_output_folder_path = mapping_gaps_output_folder_path,
+        mapping_gap_output_folder_path = mapping_gap_output_folder_path,
         folder = folder,
         partner= input_partner
     )
@@ -352,52 +409,73 @@ def run_mapping_report_job(folder):
 
 def run_upload_jobs(folder):
 
-    mapped_files_path = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+folder+"/"
-    global total_uploads_count
-    global job_num
 
-    if 'all' in input_tables:
 
-        partner_uploads_list = get_partner_uploads_list(mapped_files_path)
-        # total_uploads_count = len(partner_uploads_list)
+        fixed_files_path = '/app/partners/'+input_partner.lower()+'/data/fixer_output/'+folder+"/"
+        global total_uploads_count
+        global job_num
 
-        
+        if 'all' in input_tables:
 
-        for file_name  in partner_uploads_list:
+            partner_uploads_list = get_partner_uploads_list(fixed_files_path)
+            # total_uploads_count = len(partner_uploads_list)
 
-            table_name = file_name.replace('mapped_',"").replace('.csv',"")
+            
 
-            job_num = job_num +1
-            cf.print_run_status(job_num,total_jobs_count, f"upload {file_name}", folder, input_partner)
+            for file_name  in partner_uploads_list:
 
-            schema = schemas.get(table_name.upper(), None)
+                table_name = file_name.replace('fixed_',"").replace('.csv',"")
 
-            cf.db_upload(db= input_db,
-                         db_server=input_db_server,
-                         schema=schema,
-                         file_name=file_name, 
-                         table_name = table_name.upper(),
-                         file_path= mapped_files_path,
-                         folder_name = folder
-                          )
-    else:
+                job_num = job_num +1
+                cf.print_run_status(job_num,total_jobs_count, f"upload {file_name}", folder, input_partner)
 
-        for table in input_tables:
-            mapped_table_name = "mapped_"+table.lower()+".csv"
+                # schema = schemas.get(table_name.upper(), None)
 
-            job_num = job_num +1
-            cf.print_run_status(job_num,total_jobs_count, f"upload {mapped_table_name}", folder, input_partner)
+                schema = cf.get_schema( table_name.upper(), fixed_files_path)
 
-            schema = schemas.get(table.upper(), None)
+                cf.db_upload(db= input_db,
+                            db_server=input_db_server,
+                            schema=schema,
+                            file_name=file_name, 
+                            table_name = table_name.upper(),
+                            file_path= fixed_files_path,
+                            folder_name = folder
+                            )
+        else:
 
-            cf.db_upload(db= input_db,
-                         db_server=input_db_server,
-                         schema=schema,
-                         file_name=mapped_table_name, 
-                         table_name = table.upper(),
-                         file_path= mapped_files_path,
-                         folder_name = folder
-                          )
+            for table in input_tables:
+                fixed_table_name = "fixed_"+table.lower()+".csv"
+
+                # print(fixed_files_path+fixed_table_name)
+                # print(os.path.exists(fixed_files_path+fixed_table_name))
+
+                if os.path.exists(fixed_files_path+fixed_table_name):
+
+                    job_num = job_num +1
+                    cf.print_run_status(job_num,total_jobs_count, f"upload {fixed_table_name}", folder, input_partner)
+
+                    # schema = schemas.get(table.upper(), None)
+
+                    schema = cf.get_schema(table.upper(),fixed_files_path)
+
+                    cf.db_upload(db= input_db,
+                                db_server=input_db_server,
+                                schema=schema,
+                                file_name=fixed_table_name, 
+                                table_name = table.upper(),
+                                file_path= fixed_files_path,
+                                folder_name = folder
+                                )
+                    
+
+                else:
+
+                        cf.print_failure_message(
+                                                folder  = folder,
+                                                partner = input_partner,
+                                                job     = 'upload '+ table.lower()  ,
+                                                text    =  f"{fixed_table_name} Path does not exist!!!!"
+                                                )
 
 
 
@@ -412,14 +490,14 @@ if  not cf.valid_partner_name(input_partner):
     sys.exit()
 
 
-valid_jobs = ['all','map','format','deduplicate','upload', 'mapping_gap','mapping_report']
+valid_jobs = ['all','map','format','deduplicate','upload', 'mapping_gap','mapping_report','fix']
 
 for job in input_jobs:
    
     if job not in valid_jobs:
 
         print(job+ " is not a valid job!!!!!! Please enter a valid job name eg. -j format or -j deduplicate or -j map, or -j all")
-        print(job+ " is not a valid job!!!!!! Please enter a valid job name eg. -j format or -j deduplicate or -j map, or -j all")
+        
         sys.exit()
 
 
@@ -483,7 +561,7 @@ folders_count = len(input_data_folders)
 
 
 if 'all' in  input_jobs:
-    jobs_count = 5
+    jobs_count = 4
 else:
     jobs_count = len(input_jobs)
 
@@ -492,12 +570,7 @@ if 'all' in input_tables:
 else:
     tables_count = len(input_tables)
 
-if 'all' in  input_jobs:
-    total_jobs_count = folders_count * jobs_count * tables_count +1 
-else:
-    total_jobs_count = folders_count * jobs_count * tables_count
-
-
+total_jobs_count = folders_count * jobs_count * tables_count
 
 
 ###################################################################################################################################
@@ -515,6 +588,7 @@ for folder in input_data_folders:
         run_mapping_report_job(folder)
         run_deduplicator_jobs(folder)
         run_mappers_jobs(folder)
+        run_fixers_jobs(folder)
         run_upload_jobs(folder)
 
     else :
@@ -535,6 +609,9 @@ for folder in input_data_folders:
 
         if  'map' in input_jobs:
             run_mappers_jobs(folder)
+
+        if  'fix' in input_jobs:
+            run_fixers_jobs(folder)
 
         if  'upload' in input_jobs:
             run_upload_jobs(folder)

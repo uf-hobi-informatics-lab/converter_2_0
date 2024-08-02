@@ -59,8 +59,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -69,7 +69,7 @@ try:
     # Loading the unmapped enctounter table
     ###################################################################################################################################
 
-        unmapped_procedures    = cf.spark_read(formatted_data_folder_path+"formatted_procedures.csv", spark)
+        unmapped_procedures    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_procedures.csv", spark)
 
 
     ###################################################################################################################################
@@ -119,8 +119,8 @@ try:
 
         procedures_with_additional_fileds = cf.append_additional_fields(
             mapped_df = procedures,
-            file_name = "formatted_procedures.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
+            file_name = "deduplicated_procedures.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
             join_field = "PROCEDURESID",
             spark = spark)
 
@@ -138,6 +138,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'procedures_mapper.py' )
+                            job     = 'procedures_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

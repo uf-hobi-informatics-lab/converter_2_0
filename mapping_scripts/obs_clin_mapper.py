@@ -57,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -68,7 +68,7 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_obs_clin    = cf.spark_read(formatted_data_folder_path+"formatted_obs_clin.csv", spark)
+        unmapped_obs_clin    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_obs_clin.csv", spark)
 
 
     ###################################################################################################################################
@@ -107,7 +107,7 @@ try:
                                     unmapped_obs_clin['OBSCLIN_RESULT_SNOMED'].alias("OBSCLIN_RESULT_SNOMED"),
                                     unmapped_obs_clin['OBSCLIN_RESULT_NUM'].alias("OBSCLIN_RESULT_NUM"),
                                     coalesce(mapping_obsclin_result_modifier_dict[upper(col("OBSCLIN_RESULT_MODIFIER"))],col('OBSCLIN_RESULT_MODIFIER')).alias("OBSCLIN_RESULT_MODIFIER"),
-                                    coalesce(mapping_obsclin_result_unit_dict[upper(col("OBSCLIN_RESULT_UNIT"))],col('OBSCLIN_RESULT_UNIT')).alias("OBSCLIN_RESULT_UNIT"),
+                                    coalesce(mapping_obsclin_result_unit_dict[col("OBSCLIN_RESULT_UNIT")],col('OBSCLIN_RESULT_UNIT')).alias("OBSCLIN_RESULT_UNIT"),
                                     coalesce(mapping_obsclin_source_dict[upper(col("OBSCLIN_SOURCE"))],col('OBSCLIN_SOURCE')).alias("OBSCLIN_SOURCE"),
                                     coalesce(mapping_obsclin_abn_ind_dict[upper(col("OBSCLIN_ABN_IND"))],col('OBSCLIN_ABN_IND')).alias("OBSCLIN_ABN_IND"),
                                     unmapped_obs_clin['RAW_OBSCLIN_NAME'].alias("RAW_OBSCLIN_NAME"),
@@ -128,8 +128,8 @@ try:
     ###################################################################################################################################
         obs_clin_with_additional_fileds = cf.append_additional_fields(
             mapped_df = obs_clin,
-            file_name = "formatted_obs_clin.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
+            file_name = "deduplicated_obs_clin.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
             join_field = "OBSCLINID",
             spark = spark)
 
@@ -147,6 +147,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'obs_clin_mapper.py' )
+                            job     = 'obs_clin_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

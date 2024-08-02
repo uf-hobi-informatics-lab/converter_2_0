@@ -36,7 +36,6 @@ cf =CommonFuncitons(input_partner)
 try:
  
 
-
     ###################################################################################################################################
     # Test if the partner name is valid or not
     ###################################################################################################################################
@@ -58,9 +57,10 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
+
 
 
 
@@ -69,12 +69,10 @@ try:
     # Loading the unmapped dispensing table
     ###################################################################################################################################
 
-        # spark = SparkSession.builder.master("spark://master:7077").appName("dispensing_mapper").getOrCreate()
         spark = cf.get_spark_session("dispensing_mapper")
 
-        unmapped_dispensing = spark.read.option("inferSchema", "false").load(formatted_data_folder_path+"formatted_dispensing.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
+        unmapped_dispensing = spark.read.option("inferSchema", "false").load(deduplicated_data_folder_path+"deduplicated_dispensing.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
     
-
 
     ###################################################################################################################################
     # create the mapping from the dictionaries
@@ -84,6 +82,7 @@ try:
         mapping_dispense_dose_disp_unit_dict = create_map([lit(x) for x in chain(*partner_dictionaries.dispense_dose_disp_unit_dict.items())])
         mapping_dispense_route_dict = create_map([lit(x) for x in chain(*partner_dictionaries.dispense_route_dict.items())])
         
+
 
     ###################################################################################################################################
     # Apply the mappings dictionaries and the common function on the fields of the unmmaped dispensing table
@@ -96,7 +95,7 @@ try:
                                     cf.encrypt_id_udf(unmapped_dispensing['PATID']).alias("PATID"),
                                     cf.encrypt_id_udf(unmapped_dispensing['PRESCRIBINGID']).alias("PRESCRIBINGID"),
                                     cf.get_date_from_datetime_udf(unmapped_dispensing['DISPENSE_DATE']).alias("DISPENSE_DATE"),
-                                    unmapped_dispensing(lpad(col('NDC'), 11, '0')).alias("NDC"),
+                                    unmapped_dispensing['NDC'].alias("NDC"),
                                     mapping_dispense_source_dict[upper(col("DISPENSE_SOURCE"))].alias("DISPENSE_SOURCE"),
                                     unmapped_dispensing['DISPENSE_SUP'].alias("DISPENSE_SUP"),
                                     unmapped_dispensing['DISPENSE_AMT'].alias("DISPENSE_AMT"),
@@ -115,10 +114,11 @@ try:
     ###################################################################################################################################
     # Create the output file
     ###################################################################################################################################
+       
         dispensing_with_additional_fileds = cf.append_additional_fields(
             mapped_df = dispensing,
-            file_name = "formatted_dispensing.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
+            file_name = "deduplicated_dispensing.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
             join_field = "DISPENSINGID",
             spark = spark)
 
@@ -138,6 +138,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'demographic_mapper.py' )
+                            job     = 'dispensing_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

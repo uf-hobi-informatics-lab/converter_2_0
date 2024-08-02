@@ -29,9 +29,6 @@ args = parser.parse_args()
 input_partner = args.partner.lower()
 input_data_folder = args.data_folder
 
-input_data_folder = args.data_folder
-
-
 cf =CommonFuncitons(input_partner)
 
 # spin the pyspak cluster and
@@ -60,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -71,7 +68,7 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_death    = cf.spark_read(formatted_data_folder_path+"formatted_death.csv", spark)
+        unmapped_death    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_death.csv", spark)
 
 
 
@@ -110,8 +107,8 @@ try:
     ###################################################################################################################################
         death_with_additional_fileds = cf.append_additional_fields(
             mapped_df = death,
-            file_name = "formatted_death.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
+            file_name = "deduplicated_death.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
             join_field = "PATID",
             spark = spark)
 
@@ -132,6 +129,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'death_mapper.py' )
+                            job     = 'death_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

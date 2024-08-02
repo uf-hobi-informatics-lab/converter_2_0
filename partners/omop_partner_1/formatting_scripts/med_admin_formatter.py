@@ -4,8 +4,8 @@
 
 ###################################################################################################################################
 
-
 import pyspark
+from pyspark import SparkConf, SparkContext
 from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType, StructField, StringType
 from datetime import datetime
@@ -13,34 +13,37 @@ from pyspark.sql.functions import *
 from commonFunctions import CommonFuncitons
 import argparse
 
+partner_name = 'omop_partner_1'
+cf =CommonFuncitons(partner_name.upper())
 
-cf = CommonFuncitons('omop_partner_1')
-
-#Create SparkSession
-spark = cf.get_spark_session("med_admin_formatter")
-
-
-
+## Argument to take in a folder name to run through all files in that folder of the same type
+## Can be left blank for individual files
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--data_folder")
 args = parser.parse_args()
 input_data_folder = args.data_folder
 
 
-try: 
+#Create SparkSession
+
+spark = cf.get_spark_session("med_admin_formatter")
+#spark://master:7077
 
 
-    ###################################################################################################################################
+try:
 
-    # Loading the drug_exposure table to be converted to the med_admin table
 
-    ###################################################################################################################################
 
+###################################################################################################################################
+
+# Loading the drug_exposure table to be converted to the med_admin table
+
+###################################################################################################################################
 
     input_data_folder_path               = f'/data/{input_data_folder}/'
-    formatter_output_data_folder_path    = f'/app/partners/omop_partner_1/data/formatter_output/{input_data_folder}/'
+    formatter_output_data_folder_path    = f'/app/partners/{partner_name.lower()}/data/formatter_output/{input_data_folder}/'
 
-    drug_exposure_table_name   = 'drug_exposure.csv'
+    drug_exposure_table_name   = 'Drug_Exposure.txt'
 
     drug_exposure = spark.read.load(input_data_folder_path+drug_exposure_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
@@ -48,7 +51,18 @@ try:
     filtered_drug_exposure = drug_exposure.filter(col("drug_type").isin(filter_values))
 
 
+ ###################################################################################################################################
 
+    def get_time_from_datetime(val_time):
+        # Parse the input string into a datetime object
+        datetime_object = datetime.strptime(val_time, "%Y-%m-%d %H:%M:%S")
+
+        # Format the datetime object as a string in "yyyy-mm-dd" format
+        formatted_time = datetime_object.strftime("%H:%M")
+
+        return formatted_time
+    
+    convert_and_format_time_udf = udf(get_time_from_datetime, StringType()) 
 
 
 
@@ -64,9 +78,9 @@ try:
                                                     lit('').alias("PRESCRIBINGID"),
                                                     filtered_drug_exposure['provider_id'].alias("MEDADMIN_PROVIDERID"),
                                                     filtered_drug_exposure['drug_exposure_start_date'].alias("MEDADMIN_START_DATE"),
-                                                    cf.get_time_from_datetime_udf(filtered_drug_exposure['drug_exposure_start_datetime']).alias("MEDADMIN_START_TIME"),
+                                                    convert_and_format_time_udf(filtered_drug_exposure['drug_exposure_start_datetime']).alias("MEDADMIN_START_TIME"),
                                                     filtered_drug_exposure['drug_exposure_end_date'].alias("MEDADMIN_STOP_DATE"),
-                                                    cf.get_time_from_datetime_udf(filtered_drug_exposure['drug_exposure_end_datetime']).alias("MEDADMIN_STOP_TIME"),
+                                                    convert_and_format_time_udf(filtered_drug_exposure['drug_exposure_end_datetime']).alias("MEDADMIN_STOP_TIME"),
                                                     filtered_drug_exposure['drug_code_type'].alias("MEDADMIN_TYPE"),
                                                     filtered_drug_exposure['drug_code'].alias("MEDADMIN_CODE"),
                                                     filtered_drug_exposure['dose_ordered'].alias("MEDADMIN_DOSE_ADMIN"),
@@ -91,9 +105,10 @@ try:
     ###################################################################################################################################
 
     cf.write_pyspark_output_file(
-                        payspark_df = med_admin,
-                        output_file_name = "formatted_med_admin.csv",
-                        output_data_folder_path= formatter_output_data_folder_path)
+                      payspark_df = med_admin,
+                      output_file_name = "formatted_med_admin.csv",
+                      output_data_folder_path= formatter_output_data_folder_path)
+
 
     spark.stop()
 
@@ -103,15 +118,12 @@ except Exception as e:
     spark.stop()
     cf.print_failure_message(
                             folder  = input_data_folder,
-                            partner = 'omop_partner_1',
-                            job     = 'med_admin_formatter.py' )
+                            partner = partner_name.lower(),
+                            job     = 'med_admin_formatter.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
-
-
-
-
-
+    # cf.print_with_style(str(e), 'danger red')
 
 
 

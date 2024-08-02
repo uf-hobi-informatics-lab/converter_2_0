@@ -58,8 +58,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -70,7 +70,7 @@ try:
 
 
     
-        unmapped_prescribing    = cf.spark_read(formatted_data_folder_path+"formatted_prescribing.csv", spark)
+        unmapped_prescribing    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_prescribing.csv", spark)
 
 
     ###################################################################################################################################
@@ -129,21 +129,21 @@ try:
                                     unmapped_prescribing['RAW_RX_REFILLS'].alias("RAW_RX_REFILLS"),
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),
-                                    unmapped_prescribing['PRESCRIBINGID'].alias("JOIN_FIELD"),
+                                    # unmapped_prescribing['PRESCRIBINGID'].alias("JOIN_FIELD"),
                                                             )
 
     ###################################################################################################################################
     # Create the output file
     ###################################################################################################################################
-        prescribing_with_additional_fileds = cf.append_additional_fields(
-            mapped_df = prescribing,
-            file_name = "formatted_prescribing.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
-            join_field = "PRESCRIBINGID",
-            spark = spark)
+        # prescribing_with_additional_fileds = cf.append_additional_fields(
+        #     mapped_df = prescribing,
+        #     file_name = "deduplicated_prescribing.csv",
+        #     deduplicated_data_folder_path = deduplicated_data_folder_path,
+        #     join_field = "PRESCRIBINGID",
+        #     spark = spark)
 
         cf.write_pyspark_output_file(
-                        payspark_df = prescribing_with_additional_fileds,
+                        payspark_df = prescribing,
                         output_file_name = "mapped_prescribing.csv",
                         output_data_folder_path= mapped_data_folder_path)
 
@@ -158,6 +158,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'prescribing_mapper.py' )
+                            job     = 'prescribing_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

@@ -100,7 +100,7 @@ The Onefl_cluster info/repository can be found in this link:
 
 ## The parameters definitions:
 
-                    -j: the running job and the options are: all, format,  map,  upload, deduplicate, mapping_gap, and mapping_report
+                    -j: the running job and the options are: all, format,  map,  upload, deduplicate, mapping_gap,fix,  and mapping_report
                     -p: the partner or site. Used to pull the partner/site custom dictionaries. e.g. partner_1, partner_2, etc
                     -t: the table name to run the job on and the options are all, demographic, encounter, etc 
                     -f: the folder of where the input raw data resides

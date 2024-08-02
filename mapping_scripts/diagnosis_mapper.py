@@ -57,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -67,7 +67,7 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_diagnosis    = cf.spark_read(formatted_data_folder_path+"formatted_diagnosis.csv", spark)
+        unmapped_diagnosis    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_diagnosis.csv", spark)
 
 
     ###################################################################################################################################
@@ -121,16 +121,16 @@ try:
     ###################################################################################################################################
     # Create the output file
     ###################################################################################################################################
-        diagnosis_with_additional_fileds = cf.append_additional_fields(
+        diagnosis_with_additional_fields = cf.append_additional_fields(
             mapped_df = diagnosis,
-            file_name = "formatted_diagnosis.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
+            file_name = "deduplicated_diagnosis.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
             join_field = "DIAGNOSISID",
             spark = spark)
 
 
         cf.write_pyspark_output_file(
-                        payspark_df = diagnosis_with_additional_fileds,
+                        payspark_df = diagnosis_with_additional_fields,
                         output_file_name = "mapped_diagnosis.csv",
                         output_data_folder_path= mapped_data_folder_path)
 
@@ -144,6 +144,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'diagnosis_mapper.py' )
+                            job     = 'diagnosis_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

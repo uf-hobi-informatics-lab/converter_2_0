@@ -9,11 +9,8 @@ from itertools import chain
 from Crypto.Hash import SHA
 from Crypto.Cipher import XOR
 from base64 import b64decode, b64encode
-from pyspark.sql.functions import udf, col, count, desc, upper, round,  lit
+from pyspark.sql.functions import udf, col, count, desc, upper, round,  lit, length, max
 from pyspark.sql import SparkSession 
-from pyspark import SparkConf, SparkContext
-import pyspark
-from pyspark.sql import SparkSession
 from pyspark import SparkConf, SparkContext
 import pyspark
 import time
@@ -21,6 +18,8 @@ import subprocess
 from pyspark.sql.types import StructType, StructField, StringType, NullType
 import sys
 from spark_secrets import * 
+from settings import *
+from pcornet_cdm import PcornetCDM
 from pyspark.conf import SparkConf
 import pandas as pd
 from urllib import parse
@@ -28,10 +27,12 @@ from datetime import datetime
 import pytz
 from dateutil import parser as dp
 import pyspark.sql.functions as F
+# import importlibcc
 import os
 import importlib
 import openpyxl
-
+# from openpyxl import Workbook
+# from openpyxl.utils.dataframe import dataframe_to_rows
 
 
 
@@ -82,13 +83,29 @@ class CommonFuncitons:
     # @classmethod
     def encrypt_id(cls, id):
 
+            if id is None:
 
-            HASHING_KEY = SHA.new(SEED.encode('utf-8')).digest()
+                return None
+            else: 
 
-            cipher = XOR.new(HASHING_KEY)
 
-            return b64encode(cipher.encrypt('{}{}'.format(cls.partner, id))).decode()
+                partner_encryption_value_dict = {
 
+                        'omop_partner_1'   :  'omop_partner_1',
+                        'pcornet_partner_1':  'pcornet_partner_1',
+
+
+                }
+
+                partner_encryption_value = partner_encryption_value_dict.get(cls.partner.upper(), None)
+
+                HASHING_KEY = SHA.new(SEED.encode('utf-8')).digest()
+                HASHING_KEY = SHA.new(SEED.encode('utf-8')).digest()
+
+                cipher = XOR.new(HASHING_KEY)
+                cipher = XOR.new(HASHING_KEY)
+
+                return b64encode(cipher.encrypt('{}{}'.format(partner_encryption_value, id))).decode()
 
 
 ###################################################################################################################################
@@ -158,10 +175,116 @@ class CommonFuncitons:
         # Execute the command
         subprocess.run(" ".join(command), shell=True)
 
+###################################################################################################################################
+# This function will 
+###################################################################################################################################
+
+           
+    def copy_data(cls,input_file_name,output_file_name,data_folder_path,output_data_folder_path ):
+
+        if not os.path.exists(output_data_folder_path):
+            os.makedirs(output_data_folder_path)
+
+        command = ["cp", "-p", os.path.join(data_folder_path, input_file_name), os.path.join(output_data_folder_path,output_file_name)]
+                # Execute the command
+        subprocess.run(" ".join(command), shell=True)
+
+###################################################################################################################################
+# This function will 
+###################################################################################################################################
+
+    @classmethod
+
+    def apply_fix(cls,fix_type, fix_name, version, input_path, output_path,fixed_table_name,mapped_table_name,input_data_folder,partner_name, src1, src2):
+        # print(fix_type)
+
+        if fix_type == 'custom':
+            # print('custom')
+
+            partner_fix_path = f"/app/partners/{partner_name.lower()}/custom_fixes/{fix_name}/{version}.py"
+
+
+        if fix_type == 'common':
+
+            # print('common')
+            # cf.print_run_status(0, 0, f'{table}_deduplicator.py', os.path.split(input_folder)[1], partner)
+
+            partner_fix_path = f"/app/common/common_fixes/{fix_name}/{version}.py"
+
+        command = ["python", partner_fix_path, '-f', input_data_folder, '-t', mapped_table_name , '-p', partner_name,'-ftm',fixed_table_name, '-i',input_path,'-o',output_path, '-sr1', src1, '-sr2', src2]
+
+        subprocess.run(" ".join(command), shell=True)
+
+
 
 
 ###################################################################################################################################
-# This function will output the mapping gaps for the passed formatted file name
+# This function will output the mapping gap for the passed formatted file name
+###################################################################################################################################
+
+   
+
+    @classmethod
+    def deduplicate(cls,partner,file_name,table_name, file_path,folder_name):
+
+
+        # Set up the deduplicated files path
+        deduplicated_files_path = file_path.replace('formatter', 'deduplicator')
+        duplicate_files_path = os.path.join(deduplicated_files_path, 'duplicate_values')
+
+        # Create the deduplicated files directory if it doesn't exist
+        if not os.path.exists(deduplicated_files_path):
+            os.makedirs(deduplicated_files_path)
+
+        if not os.path.exists(duplicate_files_path):
+            os.makedirs(duplicate_files_path)
+
+        input_file = f"{file_path}formatted_{file_name.lower()}.csv"
+        deduplicated_output_file = f"{deduplicated_files_path}deduplicated_{file_name.lower()}.csv"
+        duplicates_output_file = f"{duplicate_files_path}/{file_name.lower()}_duplicates.csv"
+
+        # Construct the gawk script based on the file_name
+        if file_name == 'ENROLLMENT':
+            gawk_script = f'''
+            BEGIN {{ FS = OFS = "," }}
+            NR == 1 {{ header = $0; print header > "{deduplicated_output_file}"; print header > "{duplicates_output_file}"; next }}
+            !seen[$1, $2, $5]++ {{ print > "{deduplicated_output_file}" }}
+            seen[$1, $2, $5] > 1 {{ print > "{duplicates_output_file}" }}
+            '''
+        
+        elif file_name == 'DEATH_CAUSE':
+            gawk_script = f'''
+            BEGIN {{ FS = OFS = "," }}
+            NR == 1 {{ header = $0; print header > "{deduplicated_output_file}"; print header > "{duplicates_output_file}"; next }}
+            !seen[$1, $2, $3, $4, $5]++ {{ print > "{deduplicated_output_file}" }}
+            seen[$1, $2, $3, $4, $5] > 1 {{ print > "{duplicates_output_file}" }}
+            '''
+        
+        else:
+            gawk_script = f'''
+            BEGIN {{ FS = OFS = "," }}
+            NR == 1 {{ header = $0; print header > "{deduplicated_output_file}"; print header > "{duplicates_output_file}"; next }}
+            !seen[$1]++ {{ print > "{deduplicated_output_file}" }}
+            seen[$1] > 1 {{ print > "{duplicates_output_file}" }}
+            '''
+
+        # Construct the full shell command
+        command = f"awk '{gawk_script}' {input_file}"
+        # Execute the command
+        # try:
+        subprocess.run(command, shell=True, check=True)
+            # print(f"Deduplication completed for {file_name}. Output saved to {output_file}")
+        # except subprocess.CalledProcessError as e:
+        #     print(f"Error occurred while running gawk: {e}")
+
+
+
+
+
+
+
+###################################################################################################################################
+# This function will output the mapping gap for the passed formatted file name
 ###################################################################################################################################
 
    
@@ -170,7 +293,7 @@ class CommonFuncitons:
     def get_mapping_gap(cls,partner,file_name,table_name, file_path,folder_name):
 
 
-        spark = SparkSession.builder.master("spark://master:7077").appName("MAPPING GAPS").getOrCreate()
+        
 
         complete_file_path = file_path+'/formatted_'+file_name.lower()+'.csv'
         partner_dictionaries_path = "partners."+partner+".dictionaries"
@@ -179,12 +302,14 @@ class CommonFuncitons:
         mapping_dicionaries_list = []
 
         for key, value in partner_dictionaries.__dict__.items():
+            spark = SparkSession.builder.master("spark://master:7077").appName("MAPPING GAP").getOrCreate()
+            # print(key )
+            # print(value)
 
-
-            
-            if  file_name.lower() in key and '_dict' in key:
-
+            if  ((file_name.lower() in key and 'death_cause' not in key) or  (file_name.lower() in key and file_name.lower()=='death_cause') ) and "_dict" in key:
+                
                 # get the field name
+
 
                 prefix = '@' #logic added to only remove the first word from the dictinary name
 
@@ -193,57 +318,35 @@ class CommonFuncitons:
 
                 field_name = temp_key.replace(prefix+file_name.lower()+'_',"").replace('_dict',"").upper()
 
-                
+                try:
 
-                # get the aggreated data from the formatter for the field 
-
-                aggregated_values = cls.get_aggregate_value_from_table(complete_file_path,field_name,spark)
-
-                # aggregated_values.show()
-
-                # get and output the aggreated data that has mapping 
-
-                dictionary_dataframe = spark.createDataFrame(value.items(), ["dict_key", "dict_value"])
-                # dictionary_dataframe.show()
-                # aggregated_values.show()
+                    aggregated_values = cls.get_aggregate_value_from_table(complete_file_path,field_name,spark)
 
 
-                if 'UNIT' in field_name:
-                    joined_df = aggregated_values.join(dictionary_dataframe, dictionary_dataframe['dict_key']==aggregated_values[field_name], how ="left").orderBy(desc("count"))
-                else:
-                    joined_df = aggregated_values.join(dictionary_dataframe, upper(dictionary_dataframe['dict_key'])==upper(aggregated_values[field_name]), how ="left").orderBy(desc("count"))
-
-                # joined_df = aggregated_values.join(dictionary_dataframe, upper(dictionary_dataframe['dict_key'])==upper(aggregated_values[field_name]), how ="left")
-
-                # joined_df.show()
-
-                cls.diagnos_dictionary(dictionary_dataframe, file_path, key, file_name.lower())
-                cls.daignos_mapping(joined_df, file_path, key, field_name, dictionary_dataframe, file_name.lower())
-
-               
+                    dictionary_dataframe = spark.createDataFrame(value.items(), ["dict_key", "dict_value"])
 
 
-                # value_with_mapping =  spark.createDataFrame(dictionary_data.items(), ["GroupedName", "Value"])
+                    if 'UNIT' in field_name:
+                        joined_df = aggregated_values.join(dictionary_dataframe, dictionary_dataframe['dict_key']==aggregated_values[field_name], how ="left").orderBy(desc("count"))
+                    else:
+                        joined_df = aggregated_values.join(dictionary_dataframe, upper(dictionary_dataframe['dict_key'])==upper(aggregated_values[field_name]), how ="left").orderBy(desc("count"))
 
+                    cls.diagnos_dictionary(dictionary_dataframe, file_path, key, file_name.lower())
 
-                # get and output the aggregated tata that has no mapping
+                    cls.daignos_mapping(joined_df, file_path, key, field_name, dictionary_dataframe, file_name.lower())
 
-                # output a suggested new dicitonary
+                    mapping_dicionaries_list.append(key)
 
+                    spark.stop()
 
-
-                mapping_dicionaries_list.append(key)
-                # print(field_name)
-
-        # Print the list of names
-        # print(mapping_dicionaries_list)
-
-
-
-       
-
-        spark.stop()
-
+                except Exception as e:
+                    spark.stop
+                    cls.print_failure_message(
+                        folder = folder_name,
+                        partner = partner.lower(),
+                        job = 'mapping gap',
+                        text = str(e)
+                                            )
 
 
 ###################################################################################################################################
@@ -256,7 +359,7 @@ class CommonFuncitons:
         # getting values that mapped to null or some flavor of null like 'OT, 'NI', and "UN
         filtered_df = dictionary_dataframe.filter((col("dict_value").isin("NI", "OT", "UN")) | (col("dict_value").isNull()) | (col("dict_value") == ""))
 
-        out_file_path = file_path.replace('formatter','mapping_gaps')+"/"+table_name+"/mapping_to_flavor_of_null/"
+        out_file_path = file_path.replace('formatter','mapping_gap')+"/"+table_name+"/mapping_to_flavor_of_null/"
         output_file_name = file_name+"_flavor_of_null.csv"
 
 
@@ -272,20 +375,27 @@ class CommonFuncitons:
     def daignos_mapping(cls,joined_df, file_path, file_name, field_name, dictionary_dataframe, table_name):
 
 
-        try:
-
+        # try:
+            # print("*************************** daignos_mapping 1 *************************************")
             # output all mapping
             all_values_df = joined_df.select(joined_df[field_name],joined_df['dict_value'],joined_df['count'],joined_df['percent'])
-            all_mapping_out_file_path = file_path.replace('formatter','mapping_gaps')+"/"+table_name+"/all_mapping/"
+            # print("*************************** daignos_mapping 2 *************************************")
+            all_mapping_out_file_path = file_path.replace('formatter','mapping_gap')+"/"+table_name+"/all_mapping/"
+            # print("*************************** daignos_mapping 3 *************************************")
             all_mapping_output_file_name = file_name+"_all_mapping.csv"
+
             cls.write_pyspark_output_file(cls,all_values_df, all_mapping_output_file_name, all_mapping_out_file_path )
+
+            # print("*************************** daignos_mapping 4 *************************************")
+
             
             # output missing mapping
             missing_values_df = all_values_df.filter(col("dict_value").isNull() )
 
-            missing_mapping_out_file_path = file_path.replace('formatter','mapping_gaps')+"/"+table_name+"/missing_mapping/"
+            missing_mapping_out_file_path = file_path.replace('formatter','mapping_gap')+"/"+table_name+"/missing_mapping/"
             missing_mapping_output_file_name = file_name+"_missing_mapping.csv"
             cls.write_pyspark_output_file(cls,missing_values_df, missing_mapping_output_file_name, missing_mapping_out_file_path )
+            # print("*************************** daignos_mapping 5 *************************************")
 
             # output suggested mapping
 
@@ -297,27 +407,37 @@ class CommonFuncitons:
 
 
             )
+            # print("*************************** daignos_mapping 6 *************************************")
 
             unioned_df= dictionary_dataframe.union(to_be_added_field)
             # unioned_df.show()
-            suggested_mapping_out_file_path = file_path.replace('formatter','mapping_gaps')+"/"+table_name+"/suggested_mapping/"
+            suggested_mapping_out_file_path = file_path.replace('formatter','mapping_gap')+"/"+table_name+"/suggested_mapping/"
+            # print("*************************** daignos_mapping 7 *************************************")
 
             out_file_name = suggested_mapping_out_file_path+"suggested_"+file_name+".py"
 
-            os.makedirs(os.path.dirname(out_file_name), exist_ok=True)
+            result = os.makedirs(os.path.dirname(out_file_name), exist_ok=True)
 
-
+            # print("*************************** daignos_mapping 8 *************************************")
+            # unioned_df.show()
             formatted_text = unioned_df.rdd \
-                .map(lambda row: f'       {cls.process_key(row["dict_key"],row["dict_value"],file_name, 20)}  :  "{row["dict_value"]}",') \
-                .collect()
+                .map(lambda row: f'       {cls.process_key(row["dict_key"],row["dict_value"],file_name, 20)}  :  "{row["dict_value"]}",') 
+            
+            # print("*************************** daignos_mapping 8 -2 *************************************")
+
+            formatted_text= formatted_text.collect()
+            
+            # print("*************************** daignos_mapping 8 -2 *************************************")
 
             # Join the formatted strings with newline characters
             formatted_text = "\n".join(formatted_text)
+            # print("*************************** daignos_mapping 9 *************************************")
 
             # Write the formatted text to a text file
         
             first_line = "\n\n"+file_name+ " = {\n\n"
             last_line = "   \n\n}"
+            # print("*************************** daignos_mapping 10 *************************************")
 
             with open(out_file_name, "w+") as file:
                 file.write(first_line)
@@ -325,11 +445,11 @@ class CommonFuncitons:
                 file.write(last_line)
 
 
-        except Exception as e:
+        # except Exception as e:
 
             
 
-            cls.print_with_style(str(e), 'danger red')
+        #     cls.print_with_style(str(e), 'danger red')
             
             
     
@@ -398,16 +518,28 @@ class CommonFuncitons:
         row_count= df.count()
 
         aggregated_df = df.groupBy(field_name).agg(count("*").alias("count"))
-        aggregated_df_with_percent= aggregated_df.select(
-
-                aggregated_df[field_name],
-                aggregated_df['count'],
-                round((aggregated_df['count']/row_count)*100,2).alias('percent')
-
-
-        )
         
+        if row_count != 0 :
 
+                    aggregated_df_with_percent= aggregated_df.select(
+
+                    aggregated_df[field_name],
+                    aggregated_df['count'],
+                    
+                    round((aggregated_df['count']/row_count)*100,2).alias('percent')
+
+
+                             )   
+            
+        else :
+
+                    aggregated_df_with_percent= aggregated_df.select(
+
+                    aggregated_df[field_name],
+                    aggregated_df['count'],
+                    
+                    lit("0").alias('percent')
+                    )
 
 
         return aggregated_df_with_percent
@@ -490,20 +622,20 @@ class CommonFuncitons:
 
 
     @classmethod
-    def generate_mapping_report(cls,mapping_gaps_output_folder_path, folder, partner):
+    def generate_mapping_report(cls,mapping_gap_output_folder_path, folder, partner):
 
         spark = cls.get_spark_session('generate mapping report')
 
         empty_columns = pd.DataFrame(columns=[""] * 2)
         # Path to the Excel file
-        excel_file_path = mapping_gaps_output_folder_path + partner+'_'+folder+"_mapping_report.xlsx"
+        excel_file_path = mapping_gap_output_folder_path + partner+'_'+folder+"_mapping_report.xlsx"
 
         # Initialize a workbook object
         wb = openpyxl.Workbook()
 
 
 
-        tables_list = cls.get_folders_list(mapping_gaps_output_folder_path)
+        tables_list = cls.get_folders_list(mapping_gap_output_folder_path)
 
         for table in tables_list :
 
@@ -517,13 +649,16 @@ class CommonFuncitons:
                 combined_pd = empty_columns
 
 
-                table_all_mappings_path = mapping_gaps_output_folder_path +"/"+table+"/all_mapping/"
+                table_all_mappings_path = mapping_gap_output_folder_path +"/"+table+"/all_mapping/"
 
                 table_all_mapping_files_list = cls.get_folders_list(table_all_mappings_path)
 
                 for mapping_file in table_all_mapping_files_list:
 
                     mapping_df =  cls.spark_read(table_all_mappings_path+mapping_file, spark)
+
+                    mapping_df = mapping_df.limit(1000000)
+
 
                     pandas_df = mapping_df.toPandas()
                     combined_pd = pd.concat([combined_pd, empty_columns, pandas_df], axis=1)
@@ -580,23 +715,23 @@ class CommonFuncitons:
    
 
     @classmethod
-    def append_additional_fields(cls,mapped_df, file_name, formatted_data_folder_path,join_field, spark ):
+    def append_additional_fields(cls,mapped_df, file_name, deduplicated_data_folder_path,join_field, spark ):
 
 
-        # read the formatted file
-        formatted_file = spark.read.load(formatted_data_folder_path+file_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
+        # read the deduplicated file
+        deduplicated_file = spark.read.load(deduplicated_data_folder_path+file_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
         
-        #get the headers from the formatted and the mapped files for comparison
-        formatted_file_columns = formatted_file.columns
+        #get the headers from the deduplicated and the mapped files for comparison
+        deduplicated_file_columns = deduplicated_file.columns
         mapped_df_columns = mapped_df.columns
 
 
         # Identify common headers
-        common_headers = set(mapped_df_columns).intersection(formatted_file_columns)
+        common_headers = set(mapped_df_columns).intersection(deduplicated_file_columns)
         common_headers_without_the_join_field = [item for item in common_headers if item != join_field]
 
         # Drop common headers from the second DataFrame
-        additional_fields_data = formatted_file.drop(*common_headers_without_the_join_field)
+        additional_fields_data = deduplicated_file.drop(*common_headers_without_the_join_field)
         
         #Renaming the join field to avoid conflect during the join
         join_field_temp_name = join_field+"_new"
@@ -656,10 +791,12 @@ class CommonFuncitons:
     @staticmethod
     def format_date( val):
         """ Convenience method to try all known formats """
-
+        print(val)
         try:
             parsed_date = dp.parse(val)
         except:
+
+            print(val)
            
             return None
 
@@ -707,7 +844,7 @@ class CommonFuncitons:
     @classmethod
     def valid_partner_name(cls, input_partner_name ):
 
-        partners_list = ["omop_partner_1","pcornet_partner_1","jhs"]
+        
 
         if input_partner_name in  partners_list:
 
@@ -733,7 +870,7 @@ class CommonFuncitons:
 
 ###################################################################################################################################
     @classmethod
-    def print_failure_message(cls, folder,partner, job):
+    def print_failure_message(cls, folder,partner, job, text):
 
 
         current_utc_datetime = datetime.utcnow()
@@ -764,7 +901,7 @@ class CommonFuncitons:
             message = message + ' '
         
 
-        message = message+' --Running '+ job+ ' Failed!!!' 
+        message = message+' --Running: '+ job+ ' Failed!!!' 
 
         while len(message) < 125:
             message = message + ' '
@@ -772,8 +909,208 @@ class CommonFuncitons:
         while len(message) < 145:
             message = message + '.'
 
+        if "Path does not exist" in text:
 
-        cls.print_with_style(message, 'danger red')
+            color = 'warning orange'
+
+        else:
+
+            color = 'danger red'
+
+        cls.print_with_style(message, color)
+        cls.print_with_style(text, color)
+
+
+
+
+###################################################################################################################################
+# This 
+###################################################################################################################################
+    @classmethod
+    def get_max_feild_size_from_df(cls, file_path,field_name, spark):
+
+        # print("inside get_max_feild_size_from_df")
+
+        table_df = cls.spark_read(file_path, spark)
+
+        # table_df.show()
+        # print("field_name")
+        # print(field_name)
+        max_length = str(table_df.select(max(length(table_df[field_name]))).collect()[0][0])
+
+        # print("max_length")
+        # print(max_length)
+
+        try:
+            if int(max_length) >= 1:
+               pass
+        except:
+            max_length = "1"
+
+
+        return max_length
+
+
+
+
+###################################################################################################################################
+# This 
+###################################################################################################################################
+    @classmethod
+    def get_schema_line(cls, file_path, field_name, field_data_type, spark):
+         
+
+        # print ("get_schema_line  for : #######################################################")
+        # print (field_name)
+        harmonized_size =0 
+
+        field_max_size = int(cls.get_max_feild_size_from_df(file_path,field_name, spark))
+        # print("field_max_size")
+        # print(field_max_size)
+
+        if 'RDBMS Text' in field_data_type:
+
+                schema_type = 'VARCHAR'
+
+                cdm_field_size_list = field_data_type.split('(')
+
+                cdm_field_size = cdm_field_size_list[len(cdm_field_size_list)-1].replace(')','')
+
+                if 'x' in cdm_field_size:
+                    
+                    if 'RAW' in field_name:
+
+                        # print("outside  RAW get_max_feild_size_from_df")
+
+                        cdm_field_size  = cls.get_max_feild_size_from_df(file_path,field_name, spark)
+
+                    else:
+                        # print("outside  ELSE get_max_feild_size_from_df")
+
+                        cdm_field_size = harmonized_filed_sizes_dict.get(field_name,0)
+                
+
+
+                # print('cdm_field_size')
+                # print(cdm_field_size)
+                # print('field_max_size')
+                # print(field_max_size)
+
+
+                if int(cdm_field_size) > int(field_max_size):
+                        field_size = cdm_field_size
+                else:
+                        field_size = field_max_size
+
+
+                        # cdm_field_size  = int(harmonized_filed_sizes_dict.get(field_name))
+                                              
+                        # if int(harmonized_filed_sizes_dict.get(field_name)) <   int(cls.get_max_feild_size_from_df(file_path,field_name, spark)):
+                        
+                        #                     cdm_field_size  =  cls.get_max_feild_size_from_df(file_path,field_name, spark)
+
+                # print('field_name')
+                # print(field_name)
+
+                # print('harmonized_size')
+                # print(harmonized_size)
+                
+                # print('field_max_size')
+                # print(field_max_size)
+
+                # print('cdm_field_size')
+                # print(cdm_field_size)
+
+
+                schema_line =     field_name +' '+ schema_type+"("+str(field_size)+"),\n"
+
+
+                    
+
+        if 'RDBMS Date' in field_data_type:
+
+            schema_type = 'DATE'
+
+            schema_line =     field_name +' '+ schema_type+",\n"
+
+        if 'RDBMS Number' in field_data_type:
+
+            schema_type = 'FLOAT'
+
+            schema_line =     field_name +' '+ schema_type+",\n"
+
+
+        return schema_line
+
+        
+
+
+        
+
+###################################################################################################################################
+# This function will adjust the schema fields depend on the size specified by the user or the max size in the field
+###################################################################################################################################
+    # @classmethod
+    # def remove_last_comma(cls,s):
+    # # Find the last occurrence of the comma
+    #     last_comma_index = s.rfind(',')
+    #     # If there is no comma in the string, return the string as is
+    #     if last_comma_index == -1:
+    #         return s
+    #     # Remove the last comma by slicing the string
+    #     return s[:last_comma_index] + s[last_comma_index + 1:]
+
+###################################################################################################################################
+# This function will adjust the schema fields depend on the size specified by the user or the max size in the field
+###################################################################################################################################
+    @classmethod
+    def get_schema(cls, file_name, table_path):
+
+        # print("*********** get_schema ")
+        # print(file_name)
+
+        file_path = table_path+'fixed_'+file_name.lower()+".csv"
+
+        schema = ""
+
+        spark = cls.get_spark_session("Get Schema")
+
+
+        cdm_df = PcornetCDM.get_cdm_df(spark)
+
+        table_cdm_df = cdm_df.filter(cdm_df["TABLE_NAME"]==file_name)
+
+        table_cdm = table_cdm_df.collect()
+
+        for row in table_cdm:
+            # print(row["FIELD_NAME"])
+            # print(row["RDBMS_DATA_TYPE"])
+
+            schema = schema + '\n' + cls.get_schema_line(file_path,row["FIELD_NAME"],row["RDBMS_DATA_TYPE"] , spark) 
+
+
+        
+        schema = schema +"UPDATED VARCHAR(19),\n"
+        schema = schema +"SOURCE VARCHAR(20)"
+
+        # schema = cls.remove_last_comma(schema)
+
+
+
+        # cdm_df = 
+
+        # schema_list = schema.split(",")
+
+
+        # for line in schema_list:
+        #     line.replace ''
+        # print(schema)
+
+        spark.stop()
+        return schema
+
+
+
 
 
 ###################################################################################################################################
@@ -814,7 +1151,7 @@ class CommonFuncitons:
             message = message + ' '
         
 
-        message = message+' --Running '+job 
+        message = message+' --Running: '+job 
 
         while len(message) < 125:
             message = message + ' '
@@ -828,6 +1165,7 @@ class CommonFuncitons:
 ###################################################################################################################################
 # This function will print a text with matrix green color
 ###################################################################################################################################
+
 
     @classmethod
     def print_with_style(cls, text, color):
@@ -843,12 +1181,78 @@ class CommonFuncitons:
             bold_code = '\033[1m'
             color_code = RED='\033[0;31m'
             reset_code = '\033[0m'  # Reset to default style
-        
+
+
+        if color == 'warning orange':
+
+            bold_code = '\033[1m'
+            color_code = '\033[38;5;214m'  # Orange
+            reset_code = '\033[0m'  # Reset to default style
+
+
+        if color == 'blue':
+            bold_code = '\033[1m'
+            color_code = BLUE='\033[0;34m'
+            reset_code = '\033[0m'  # Reset to default style
+
+        if color == 'pomegranate':
+            bold_code = '\033[1m'
+            color_code =  POMEGRANATE='\033[0;91m'
+            reset_code = '\033[0m'  # Reset to default style
+
+        if color == 'dark pink':
+            bold_code = '\033[1m'
+            color_code =   DARK_PINK='\033[0;35m'
+            reset_code = '\033[0m'  # Reset to default style
+   
         # Print bold green text
         print(bold_code + color_code + text + reset_code)
 
-
 ###################################################################################################################################
+# This function will print a text with matrix green color
+###################################################################################################################################
+
+
+    @classmethod
+    def print_fixer_status(cls,current_count,total_count, fix_type, fix_name):
+        
+
+
+        current_utc_datetime = datetime.utcnow()
+        new_york_tz = pytz.timezone('America/New_York')
+
+        current_ny_datetime = current_utc_datetime.replace(tzinfo=pytz.utc).astimezone(new_york_tz)
+
+        formatted_ny_datetime = current_ny_datetime.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+        message = formatted_ny_datetime
+
+        while len(message) < 25:
+            message = message + ' '
+
+        message = message + 'Fix: '+str(current_count)+'/'+str(total_count)
+        while len(message) < 39:
+            message = message + ' '
+
+        message = message + "--Fix type: " + fix_type+ ' '
+
+    
+        while len(message) < 80:
+            message = message + ' '
+
+
+        message = message + "--Fix Name: " +  fix_name+ ' '
+
+
+        while len(message) < 125:
+            message = message + ' '
+
+        while len(message) < 145:
+            message = message + '.'
+
+        cls.print_with_style(message, 'dark pink')
+
+##################################################################################################################################
 # 
 ###################################################################################################################################
 

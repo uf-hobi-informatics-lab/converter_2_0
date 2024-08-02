@@ -1,6 +1,6 @@
 #SEED is the key used for encryption
 #Change with the OneFlorida key
-SEED = "Change Me!!!!!"
+SEED = "CHANGE ME"
 
 
 

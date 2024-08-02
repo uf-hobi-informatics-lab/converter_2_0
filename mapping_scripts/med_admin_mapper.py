@@ -58,10 +58,7 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -71,7 +68,7 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_med_admin    = cf.spark_read(formatted_data_folder_path+"formatted_med_admin.csv", spark)
+        unmapped_med_admin    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_med_admin.csv", spark)
 
 
     ###################################################################################################################################
@@ -117,7 +114,7 @@ try:
                                     unmapped_med_admin['RAW_MEDADMIN_ROUTE'].alias("RAW_MEDADMIN_ROUTE"),
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),
-                                    unmapped_med_admin['MEDADMINID'].alias("JOIN_FIELD"),
+                                    # unmapped_med_admin['MEDADMINID'].alias("JOIN_FIELD"),
 
 
                                                             )
@@ -125,16 +122,16 @@ try:
     ###################################################################################################################################
     # Create the output file
     ###################################################################################################################################
-        med_admin_with_additional_fileds = cf.append_additional_fields(
-            mapped_df = med_admin,
-            file_name = "formatted_med_admin.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
-            join_field = "MEDADMINID",
-            spark = spark)
+        # med_admin_with_additional_fileds = cf.append_additional_fields(
+        #     mapped_df = med_admin,
+        #     file_name = "deduplicated_med_admin.csv",
+        #     deduplicated_data_folder_path = deduplicated_data_folder_path,
+        #     join_field = "MEDADMINID",
+        #     spark = spark)
 
 
         cf.write_pyspark_output_file(
-                        payspark_df = med_admin_with_additional_fileds,
+                        payspark_df = med_admin,
                         output_file_name = "mapped_med_admin.csv",
                         output_data_folder_path= mapped_data_folder_path)
 
@@ -149,6 +146,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'med_admin_mapper.py' )
+                            job     = 'med_admin_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

@@ -5,7 +5,35 @@ BCP_DRIVER     = 'mssql'
 
 
 
+partners_list = [
+    
+                 "omop_partner_1",
+                 "pcornet_partner_1",
+
+                 
+                 
+                 ]
+
+harmonized_filed_sizes_dict = {
+
+                            "PATID"               :"64",
+                            "ENCOUNTERID"         :"128",
+                            "PROVIDERID"          :"64",
+                            "VX_PROVIDERID"       :"64",
+                            "MEDADMIN_PROVIDERID" :"64",
+                            "OBSGEN_PROVIDERID"   :"64",
+                            "OBSCLIN_PROVIDERID"  :"64",
+                            "RX_PROVIDERID"       :"64",
+                            "PROCEDURESID"        :"128",
+                            "PRESCRIBINGID"       :"128",
+                            
+                            }
+
+
 schemas = {
+
+
+
 
 
 
@@ -616,13 +644,270 @@ schemas = {
                          source VARCHAR(50)
                         """,
 
+"LAB_RESULT_CM":"""
 
+                         LAB_RESULT_CM_ID VARCHAR(128),
+                         PATID VARCHAR(128),
+                         ENCOUNTERID VARCHAR(128),
+                         SPECIMEN_SOURCE VARCHAR(50),
+                         LAB_LOINC VARCHAR(10),
+                         LAB_RESULT_SOURCE VARCHAR(50),
+                         LAB_LOINC_SOURCE VARCHAR(50),
+                         PRIORITY VARCHAR(50),
+                         RESULT_LOC VARCHAR(50),
+                         LAB_PX VARCHAR(11),
+                         LAB_PX_TYPE VARCHAR(50),
+                         LAB_ORDER_DATE VARCHAR(50),
+                         SPECIMEN_DATE VARCHAR(50),
+                         SPECIMEN_TIME VARCHAR(5),
+                         RESULT_DATE VARCHAR(50),
+                         RESULT_TIME VARCHAR(5),
+                         RESULT_QUAL VARCHAR(50),
+                         RESULT_SNOMED VARCHAR(18),
+                         RESULT_NUM FLOAT,
+                         RESULT_MODIFIER VARCHAR(50),
+                         RESULT_UNIT VARCHAR(25),
+                         NORM_RANGE_LOW VARCHAR(50),
+                         NORM_MODIFIER_LOW VARCHAR(50),
+                         NORM_RANGE_HIGH VARCHAR(50),
+                         NORM_MODIFIER_HIGH VARCHAR(50),
+                         ABN_IND VARCHAR(50),
+                         RAW_LAB_NAME VARCHAR(256),
+                         RAW_LAB_CODE VARCHAR(100),
+                         RAW_PANEL VARCHAR(300),
+                         RAW_RESULT VARCHAR(300),
+                         RAW_UNIT VARCHAR(50),
+                         RAW_ORDER_DEPT VARCHAR(50),
+                         RAW_FACILITY_CODE VARCHAR(50),
+                         updated VARCHAR(50),
+                         source VARCHAR(50)
+                        """,
+"LDS_ADDRESS_HISTORY":"""
 
-
-                                               
-
+                         ADDRESSID VARCHAR(128),
+                         PATID VARCHAR(128),
+                         ADDRESS_USE VARCHAR(50),
+                         ADDRESS_TYPE VARCHAR(50),
+                         ADDRESS_PREFERRED VARCHAR(50),
+                         ADDRESS_CITY VARCHAR(50),
+                         ADDRESS_STATE VARCHAR(50),
+                         ADDRESS_ZIP5 VARCHAR(5),
+                         ADDRESS_ZIP9 VARCHAR(9),
+                         ADDRESS_COUNTY VARCHAR(50),
+                         ADDRESS_PERIOD_START DATE,
+                         ADDRESS_PERIOD_END DATE,
+                         updated VARCHAR(50),
+                         source VARCHAR(50)
+                        """,
                         
-                       
+"MED_ADMIN":"""
 
-                    
+                         MEDADMINID VARCHAR(128),
+                         PATID VARCHAR(128),
+                         ENCOUNTERID VARCHAR(128),
+                         PRESCRIBINGID VARCHAR(128),
+                         MEDADMIN_PROVIDERID VARCHAR(32),
+                         MEDADMIN_START_DATE VARCHAR(50),
+                         MEDADMIN_START_TIME VARCHAR(5),
+                         MEDADMIN_STOP_DATE VARCHAR(50),
+                         MEDADMIN_STOP_TIME VARCHAR(5),
+                         MEDADMIN_TYPE VARCHAR(50),
+                         MEDADMIN_CODE VARCHAR(50),
+                         MEDADMIN_DOSE_ADMIN FLOAT,
+                         MEDADMIN_DOSE_ADMIN_UNIT VARCHAR(25),
+                         MEDADMIN_ROUTE VARCHAR(25),
+                         MEDADMIN_SOURCE VARCHAR(50),
+                         RAW_MEDADMIN_MED_NAME VARCHAR(256),
+                         RAW_MEDADMIN_CODE VARCHAR(50),
+                         RAW_MEDADMIN_DOSE_ADMIN VARCHAR(50),
+                         RAW_MEDADMIN_DOSE_ADMIN_UNIT VARCHAR(50),
+                         RAW_MEDADMIN_ROUTE VARCHAR(50),
+                         updated VARCHAR(50),
+                         source VARCHAR(50)
+                        """,
+               
+"OBS_CLIN":"""
+
+                         OBSCLINID VARCHAR(128),
+                         PATID VARCHAR(128),
+                         ENCOUNTERID VARCHAR(128),
+                         OBSCLIN_PROVIDERID VARCHAR(32),
+                         OBSCLIN_START_DATE DATE,
+                         OBSCLIN_START_TIME VARCHAR(5),
+                         OBSCLIN_STOP_DATE DATE,
+                         OBSCLIN_STOP_TIME VARCHAR(5),
+                         OBSCLIN_TYPE VARCHAR(50),
+                         OBSCLIN_CODE VARCHAR(50),
+                         OBSCLIN_RESULT_QUAL VARCHAR(15),
+                         OBSCLIN_RESULT_TEXT VARCHAR(1500),
+                         OBSCLIN_RESULT_SNOMED VARCHAR(18),
+                         OBSCLIN_RESULT_NUM FLOAT,
+                         OBSCLIN_RESULT_MODIFIER VARCHAR(50),
+                         OBSCLIN_RESULT_UNIT VARCHAR(25),
+                         OBSCLIN_SOURCE VARCHAR(50),
+                         OBSCLIN_ABN_IND VARCHAR(50),
+                         RAW_OBSCLIN_NAME VARCHAR(200),
+                         RAW_OBSCLIN_CODE VARCHAR(200),
+                         RAW_OBSCLIN_TYPE VARCHAR(200),
+                         RAW_OBSCLIN_RESULT VARCHAR(200),
+                         RAW_OBSCLIN_MODIFIER VARCHAR(200),
+                         RAW_OBSCLIN_UNIT VARCHAR(200),
+                         updated VARCHAR(50),
+                         source VARCHAR(50)
+                        """,
+"OBS_GEN":"""
+
+                         OBSGENID VARCHAR(128),
+                         PATID VARCHAR(128),
+                         ENCOUNTERID VARCHAR(128),
+                         OBSGEN_PROVIDERID VARCHAR(32),
+                         OBSGEN_START_DATE DATE,
+                         OBSGEN_START_TIME VARCHAR(5),
+                         OBSGEN_STOP_DATE DATE,
+                         OBSGEN_STOP_TIME VARCHAR(5),
+                         OBSGEN_TYPE VARCHAR(50),
+                         OBSGEN_CODE VARCHAR(50),
+                         OBSGEN_RESULT_QUAL VARCHAR(15),
+                         OBSGEN_RESULT_TEXT VARCHAR(300),
+                         OBSGEN_RESULT_NUM FLOAT,
+                         OBSGEN_RESULT_MODIFIER VARCHAR(50),
+                         OBSGEN_RESULT_UNIT VARCHAR(25),
+                         OBSGEN_TABLE_MODIFIED VARCHAR(50),
+                         OBSGEN_ID_MODIFIED VARCHAR(12),
+                         OBSGEN_SOURCE VARCHAR(50),
+                         OBSGEN_ABN_IND VARCHAR(50),
+                         RAW_OBSGEN_NAME VARCHAR(200),
+                         RAW_OBSGEN_CODE VARCHAR(200),
+                         RAW_OBSGEN_TYPE VARCHAR(200),
+                         RAW_OBSGEN_RESULT VARCHAR(200),
+                         RAW_OBSGEN_UNIT VARCHAR(200),
+                         updated VARCHAR(50),
+                         source VARCHAR(50)
+                        """,                                                
+"PRO_CM":"""
+
+                         PRO_CM_ID VARCHAR(128),
+                         PATID VARCHAR(128),
+                         ENCOUNTERID VARCHAR(128),
+                         PRO_DATE DATE,
+                         PRO_TIME VARCHAR(5),
+                         PRO_TYPE VARCHAR(50),
+                         PRO_ITEM_NAME VARCHAR(10),
+                         PRO_ITEM_LOINC VARCHAR(10),
+                         PRO_RESPONSE_TEXT VARCHAR(128),
+                         PRO_RESPONSE_NUM FLOAT,
+                         PRO_METHOD VARCHAR(50),
+                         PRO_MODE VARCHAR(50),
+                         PRO_CAT VARCHAR(50),
+                         PRO_SOURCE VARCHAR(50),
+                         PRO_ITEM_VERSION VARCHAR(10),
+                         PRO_MEASURE_NAME VARCHAR(50),
+                         PRO_MEASURE_SEQ VARCHAR(100),
+                         PRO_MEASURE_SCORE FLOAT,
+                         PRO_MEASURE_THETA FLOAT,
+                         PRO_MEASURE_SCALED_TSCORE FLOAT,
+                         PRO_MEASURE_STANDARD_ERROR FLOAT,
+                         PRO_MEASURE_COUNT_SCORED FLOAT,
+                         PRO_MEASURE_LOINC VARCHAR(10),
+                         PRO_MEASURE_VERSION ARCHAR(5),
+                         PRO_ITEM_FULLNAME VARCHAR(50),
+                         PRO_ITEM_TEXT VARCHAR(350),
+                         PRO_MEASURE_FULLNAME VARCHAR(50),
+                         updated VARCHAR(50),
+                         source VARCHAR(50)
+                        """,
+                        
+"PROCEDURES":"""
+
+                         PROCEDURESID VARCHAR(128),
+                         PATID VARCHAR(128),
+                         ENCOUNTERID VARCHAR(128),
+                         ENC_TYPE VARCHAR(50),
+                         ADMIT_DATE VARCHAR(50),
+                         PROVIDERID VARCHAR(32),
+                         PX_DATE VARCHAR(50),
+                         PX VARCHAR(50),
+                         PX_TYPE VARCHAR(50),
+                         PX_SOURCE VARCHAR(50),
+                         PPX VARCHAR(50),
+                         RAW_PX VARCHAR(260),
+                         RAW_PX_TYPE VARCHAR(50),
+                         RAW_PPX VARCHAR(50),
+                         updated VARCHAR(50),
+                         source VARCHAR(50)
+                        """,                        
+"PRESCRIBING":"""
+
+                         PRESCRIBINGID VARCHAR(128),
+                         PATID VARCHAR(128),
+                         ENCOUNTERID VARCHAR(128),
+                         RX_PROVIDERID VARCHAR(32),
+                         RX_ORDER_DATE VARCHAR(50),
+                         RX_ORDER_TIME VARCHAR(50),
+                         RX_START_DATE VARCHAR(50),
+                         RX_END_DATE VARCHAR(50),
+                         RX_DOSE_ORDERED FLOAT,
+                         RX_DOSE_ORDERED_UNIT VARCHAR(25),
+                         RX_QUANTITY FLOAT,
+                         RX_DOSE_FORM VARCHAR(50),
+                         RX_REFILLS FLOAT,
+                         RX_DAYS_SUPPLY FLOAT,
+                         RX_FREQUENCY VARCHAR(50),
+                         RX_PRN_FLAG VARCHAR(1),
+                         RX_ROUTE VARCHAR(25),
+                         RX_BASIS VARCHAR(50),
+                         RXNORM_CUI VARCHAR(8),
+                         RX_SOURCE VARCHAR(50),
+                         RX_DISPENSE_AS_WRITTEN VARCHAR(50),
+                         RAW_RX_MED_NAME VARCHAR(300),
+                         RAW_RX_FREQUENCY VARCHAR(450),
+                         RAW_RXNORM_CUI VARCHAR(50),
+                         RAW_RX_QUANTITY VARCHAR(50),
+                         RAW_RX_NDC VARCHAR(50),
+                         RAW_RX_DOSE_ORDERED VARCHAR(50),
+                         RAW_RX_DOSE_ORDERED_UNIT VARCHAR(50),
+                         RAW_RX_ROUTE VARCHAR(50),
+                         RAW_RX_REFILLS VARCHAR(50),
+                         updated VARCHAR(50),
+                         source VARCHAR(50)
+                        """,
+"PROVIDER":"""
+
+                         PROVIDERID VARCHAR(32),
+                         PROVIDER_SEX VARCHAR(50),
+                         PROVIDER_SPECIALTY_PRIMARY VARCHAR(10),
+                         PROVIDER_NPI FLOAT,
+                         PROVIDER_NPI_FLAG VARCHAR(1),
+                         RAW_PROVIDER_SPECIALTY_PRIMARY VARCHAR(100),
+                         updated VARCHAR(50),
+                         source VARCHAR(50)
+                        """,
+
+ 
+"VITAL":"""
+
+                         VITALID VARCHAR(128),
+                         PATID VARCHAR(128),
+                         ENCOUNTERID VARCHAR(128),
+                         MEASURE_DATE DATE,
+                         MEASURE_TIME VARCHAR(50),
+                         VITAL_SOURCE VARCHAR(50),
+                         HT FLOAT,
+                         WT FLOAT,
+                         DIASTOLIC FLOAT,
+                         SYSTOLIC FLOAT,
+                         ORIGINAL_BMI FLOAT,
+                         BP_POSITION VARCHAR(50),
+                         SMOKING VARCHAR(50),
+                         TOBACCO VARCHAR(50),
+                         TOBACCO_TYPE VARCHAR(50),
+                         RAW_DIASTOLIC VARCHAR(50),
+                         RAW_SYSTOLIC VARCHAR(50),
+                         RAW_BP_POSITION VARCHAR(50),
+                         RAW_SMOKING VARCHAR(300),
+                         RAW_TOBACCO VARCHAR(300),
+                         RAW_TOBACCO_TYPE VARCHAR(300),
+                         updated VARCHAR(50),
+                         source VARCHAR(50)
+                        """,                        
 }

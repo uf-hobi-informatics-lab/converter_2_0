@@ -31,7 +31,6 @@ input_data_folder = args.data_folder
 
 cf =CommonFuncitons(input_partner)
 
-# spin the pyspak cluster and
 spark = cf.get_spark_session("enrollment_mapper")
 
 try:
@@ -58,7 +57,7 @@ try:
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
                 
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -67,7 +66,7 @@ try:
     # Loading the unmapped enctounter table
     ###################################################################################################################################
 
-        unmapped_enrollment    = cf.spark_read(formatted_data_folder_path+"formatted_enrollment.csv", spark)
+        unmapped_enrollment    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_enrollment.csv", spark)
 
 
 
@@ -93,8 +92,6 @@ try:
                                     coalesce(mapping_enr_basis_dict[upper(col('ENR_BASIS'))],col('ENR_BASIS')).alias("ENR_BASIS"),
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),
-                                    unmapped_enrollment['PATID'].alias("JOIN_FIELD"),
-
 
                                                             )
 
@@ -102,17 +99,8 @@ try:
     # Create the output file
     ###################################################################################################################################
 
-        enrollment_with_additional_fileds = cf.append_additional_fields(
-            mapped_df = enrollment,
-            file_name = "formatted_enrollment.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
-            join_field = "PATID",
-            spark = spark)
- 
-
-
         cf.write_pyspark_output_file(
-                        payspark_df = enrollment_with_additional_fileds,
+                        payspark_df = enrollment,
                         output_file_name = "mapped_enrollment.csv",
                         output_data_folder_path= mapped_data_folder_path)
 
@@ -126,6 +114,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'enrollment_mapper.py' )
+                            job     = 'enrollment_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

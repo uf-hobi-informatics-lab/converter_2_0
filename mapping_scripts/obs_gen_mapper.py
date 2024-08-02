@@ -58,10 +58,7 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -72,7 +69,7 @@ try:
 
 
 
-        unmapped_obs_gen    = cf.spark_read(formatted_data_folder_path+"formatted_obs_gen.csv", spark)
+        unmapped_obs_gen    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_obs_gen.csv", spark)
 
 
 
@@ -111,7 +108,7 @@ try:
                                     unmapped_obs_gen['OBSGEN_RESULT_TEXT'].alias("OBSGEN_RESULT_TEXT"),
                                     unmapped_obs_gen['OBSGEN_RESULT_NUM'].alias("OBSGEN_RESULT_NUM"),
                                     coalesce(mapping_obsgen_result_modifier_dict[upper(col("OBSGEN_RESULT_MODIFIER"))],col('OBSGEN_RESULT_MODIFIER')).alias("OBSGEN_RESULT_MODIFIER"),
-                                    coalesce(mapping_obsgen_result_unit_dict[upper(col("OBSGEN_RESULT_UNIT"))],col('OBSGEN_RESULT_UNIT')).alias("OBSGEN_RESULT_UNIT"),
+                                    coalesce(mapping_obsgen_result_unit_dict[col("OBSGEN_RESULT_UNIT")],col('OBSGEN_RESULT_UNIT')).alias("OBSGEN_RESULT_UNIT"),
                                     unmapped_obs_gen['OBSGEN_TABLE_MODIFIED'].alias("OBSGEN_TABLE_MODIFIED"),
                                     unmapped_obs_gen['OBSGEN_ID_MODIFIED'].alias("OBSGEN_ID_MODIFIED"),                             
                                     coalesce(mapping_obsgen_source_dict[upper(col("OBSGEN_SOURCE"))],col('OBSGEN_SOURCE')).alias("OBSGEN_SOURCE"),
@@ -132,8 +129,8 @@ try:
     ###################################################################################################################################
         obs_gen_with_additional_fileds = cf.append_additional_fields(
             mapped_df = obs_gen,
-            file_name = "formatted_obs_gen.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
+            file_name = "deduplicated_obs_gen.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
             join_field = "OBSGENID",
             spark = spark)
 
@@ -152,6 +149,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'obs_gen_mapper.py' )
+                            job     = 'obs_gen_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

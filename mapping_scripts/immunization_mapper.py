@@ -57,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -69,7 +69,7 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_immunization    = cf.spark_read(formatted_data_folder_path+"formatted_immunization.csv", spark)
+        unmapped_immunization    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_immunization.csv", spark)
 
 
     ###################################################################################################################################
@@ -106,9 +106,9 @@ try:
                                     coalesce(mapping_vx_status_reason[upper(col("VX_STATUS_REASON"))],col('VX_STATUS_REASON')).alias("VX_STATUS_REASON"),
                                     coalesce(mapping_vx_source[upper(col("VX_SOURCE"))],col('VX_SOURCE')).alias("VX_SOURCE"),
                                     unmapped_immunization['VX_DOSE'].alias("VX_DOSE"),
-                                    coalesce(mapping_vx_source[upper(col("VX_DOSE_UNIT"))],col('VX_DOSE_UNIT')).alias("VX_DOSE_UNIT"),
+                                    coalesce(mapping_vx_dose_unit[col("VX_DOSE_UNIT")],col('VX_DOSE_UNIT')).alias("VX_DOSE_UNIT"),
                                     coalesce(mapping_vx_route[upper(col("VX_ROUTE"))],col('VX_ROUTE')).alias("VX_ROUTE"),
-                                    coalesce(mapping_vx_route[upper(col("VX_BODY_SITE"))],col('VX_BODY_SITE')).alias("VX_BODY_SITE"),
+                                    coalesce(mapping_vx_body_site[upper(col("VX_BODY_SITE"))],col('VX_BODY_SITE')).alias("VX_BODY_SITE"),
                                     coalesce(mapping_vx_manufacturer[upper(col("VX_MANUFACTURER"))],col('VX_MANUFACTURER')).alias("VX_MANUFACTURER"),
                                     unmapped_immunization['VX_LOT_NUM'].alias("VX_LOT_NUM"),
                                     unmapped_immunization['VX_EXP_DATE'].alias("VX_EXP_DATE"),
@@ -131,8 +131,8 @@ try:
     ###################################################################################################################################
         immunization_with_additional_fileds = cf.append_additional_fields(
             mapped_df = immunization,
-            file_name = "formatted_immunization.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
+            file_name = "deduplicated_immunization.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
             join_field = "IMMUNIZATIONID",
             spark = spark)
 
@@ -152,6 +152,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'immunization_mapper.py' )
+                            job     = 'immunization_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

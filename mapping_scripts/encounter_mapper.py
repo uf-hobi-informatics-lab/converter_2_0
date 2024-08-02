@@ -32,7 +32,6 @@ input_data_folder = args.data_folder
 
 cf =CommonFuncitons(input_partner)
 
-# spin the pyspak cluster and
 spark = cf.get_spark_session("encounter_mapper")
 
  
@@ -59,8 +58,7 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -70,12 +68,13 @@ try:
     ###################################################################################################################################
 
 
-        unmapped_encounter    = cf.spark_read(formatted_data_folder_path+"formatted_encounter.csv", spark)
+        unmapped_encounter    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_encounter.csv", spark)
 
 
     ###################################################################################################################################
     # create the mapping from the dictionaries
     ###################################################################################################################################
+        
         mapping_enc_type_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_enc_type_dict.items())])
         mapping_discharge_disposition_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_discharge_disposition_dict.items())])
         mapping_discharge_status_dict = create_map([lit(x) for x in chain(*partner_dictionaries.encounter_discharge_status_dict.items())])
@@ -142,8 +141,8 @@ try:
 
         encounter_with_additional_fileds = cf.append_additional_fields(
             mapped_df = encounter,
-            file_name = "formatted_encounter.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
+            file_name = "deduplicated_encounter.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
             join_field = "ENCOUNTERID",
             spark = spark)
 
@@ -163,6 +162,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'encounter_mapper.py' )
+                            job     = 'encounter_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')

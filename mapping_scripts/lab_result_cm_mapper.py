@@ -32,7 +32,6 @@ input_data_folder = args.data_folder
 
 cf =CommonFuncitons(input_partner)
 
- # spin the pyspak cluster and
 spark = cf.get_spark_session("lab_result_cm_mapper")
 
 try:
@@ -58,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # formatted_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        formatted_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -68,14 +67,14 @@ try:
     # Loading the unmapped enctounter table
     ###################################################################################################################################
 
-
  
-        unmapped_lab_result_cm    = cf.spark_read(formatted_data_folder_path+"formatted_lab_result_cm.csv", spark)
+        unmapped_lab_result_cm    = cf.spark_read(deduplicated_data_folder_path+"deduplicated_lab_result_cm.csv", spark)
 
 
     ###################################################################################################################################
     # create the mapping from the dictionaries
     ###################################################################################################################################
+       
         mapping_specimen_source_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_specimen_source_dict.items())])
         mapping_lab_result_source_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_lab_result_source_dict.items())])
         mapping_priority_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_priority_dict.items())])
@@ -87,7 +86,6 @@ try:
         mapping_result_modifier_high_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_norm_modifier_high_dict.items())])
         mapping_result_unit_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_result_unit_dict.items())])
         mapping_abn_ind_dict = create_map([lit(x) for x in chain(*partner_dictionaries.lab_result_cm_abn_ind_dict.items())])
-
 
 
     ###################################################################################################################################
@@ -118,7 +116,7 @@ try:
                                     unmapped_lab_result_cm['RESULT_SNOMED'].alias("RESULT_SNOMED"),
                                     unmapped_lab_result_cm['RESULT_NUM'].alias("RESULT_NUM"),
                                     coalesce(mapping_result_modifier_dict[upper(col("RESULT_MODIFIER"))],col('RESULT_MODIFIER')).alias("RESULT_MODIFIER"),
-                                    coalesce(mapping_result_unit_dict[upper(col("RESULT_UNIT"))],col('RESULT_UNIT')).alias("RESULT_UNIT"),
+                                    coalesce(mapping_result_unit_dict[col("RESULT_UNIT")],col('RESULT_UNIT')).alias("RESULT_UNIT"),
                                     unmapped_lab_result_cm['NORM_RANGE_LOW'].alias("NORM_RANGE_LOW"),
                                     coalesce(mapping_result_modifier_low_dict[upper(col("NORM_MODIFIER_LOW"))],col('NORM_MODIFIER_LOW')).alias("NORM_MODIFIER_LOW"),
                                     unmapped_lab_result_cm['NORM_RANGE_HIGH'].alias("NORM_RANGE_HIGH"),
@@ -141,10 +139,11 @@ try:
     ###################################################################################################################################
     # Create the output file
     ###################################################################################################################################
+        
         lab_result_cm_with_additional_fileds = cf.append_additional_fields(
             mapped_df = lab_result_cm,
-            file_name = "formatted_lab_result_cm.csv",
-            formatted_data_folder_path = formatted_data_folder_path,
+            file_name = "deduplicated_lab_result_cm.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
             join_field = "LAB_RESULT_CM_ID",
             spark = spark)
 
@@ -163,6 +162,8 @@ except Exception as e:
     cf.print_failure_message(
                             folder  = input_data_folder,
                             partner = input_partner,
-                            job     = 'lab_result_cm_mapper.py' )
+                            job     = 'lab_result_cm_mapper.py' ,
+                            text = str(e)
+                            )
 
-    cf.print_with_style(str(e), 'danger red')
+    # cf.print_with_style(str(e), 'danger red')
