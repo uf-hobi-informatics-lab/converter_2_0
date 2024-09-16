@@ -4,27 +4,19 @@ Author: Ali Nouina <br>
 Contact: abdelali@ufl.edu<br>
 Secondary contributor: Jason Glover <br>
 Contact: jasonglover@ufl.edu<br>
-Last Updated: 03/19/2024 <br>
+Last Updated: 09/16/2024 <br>
 
-#Requirements
+# Requirements
 
-This script requires the use of a PySpark cluster. Before running the script, make sure you have set up a PySpark cluster environment.
+This script requires the use of OneFlorida's PySpark cluster environment. Before running the script, make sure you have set up a PySpark cluster environment. The cluster repo can be found [here](https://bitbucket.org/bmi-ufl/onefl_cluster/src/master/).
 
-## Setting Up a PySpark Cluster
+# Installation
 
-The Onefl_cluster info/repository can be found in this link: 
-                        https://bitbucket.org/bmi-ufl/onefl_cluster/src/master/
+1. Run the installation script and follow the instructions
 
-# Running the formatters, the mappers, and the uploaders scripts
+        python3 install.py
 
-## Before running your scripts:
-
-1. Rename your /data_example subfolder to /data
-
-        cp -r partners/[site_name]/data_example  partners/[site_name]/data
-
-
-2. Rename spark_secrets_example.py to secrets.py
+2. Rename spark_secrets_example.py to spark_secrets.py
 
         cp common/spark_secrets_example.py  common/spark_secrets.py
 
@@ -38,6 +30,8 @@ The Onefl_cluster info/repository can be found in this link:
 
         chmod -R 777 .
 
+
+# Running the formatters, the mappers, and the uploaders scripts
 
 ## To run the individual formatter/ or multiple formatters:
 
