@@ -93,8 +93,6 @@ class CommonFuncitons:
 
                         'omop_partner_1'   :  'omop_partner_1',
                         'pcornet_partner_1':  'pcornet_partner_1',
-
-
                 }
 
                 partner_encryption_value = partner_encryption_value_dict.get(cls.partner.upper(), None)

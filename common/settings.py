@@ -8,11 +8,8 @@ BCP_DRIVER     = 'mssql'
 partners_list = [
     
                  "omop_partner_1",
-                 "pcornet_partner_1",
-
-                 
-                 
-                 ]
+                 "pcornet_partner_1"
+                ]
 
 harmonized_filed_sizes_dict = {
 
