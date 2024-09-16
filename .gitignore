@@ -6,3 +6,4 @@
 common/spark_secrets.py
 # The prepending ! will make sure the example is tracked properly.
 !common/spark_secrets_example.py
+*.un~
