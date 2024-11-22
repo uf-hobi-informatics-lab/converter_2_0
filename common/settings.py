@@ -9,6 +9,7 @@ partners_list = [
     
                  "omop_partner_1",
                  "pcornet_partner_1",
+                 "omop_partner_plus",
 
                  
                  

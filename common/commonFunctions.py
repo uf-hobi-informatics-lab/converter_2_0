@@ -31,6 +31,8 @@ import pyspark.sql.functions as F
 import os
 import importlib
 import openpyxl
+from PIL import Image
+
 # from openpyxl import Workbook
 # from openpyxl.utils.dataframe import dataframe_to_rows
 
@@ -62,7 +64,7 @@ class CommonFuncitons:
         self.get_date_from_date_str_with_default_value_udf = udf(self.get_date_from_date_str_with_default_value, StringType())
         self.get_datetime_from_date_str_with_default_value_udf = udf(self.get_datetime_from_date_str_with_default_value, StringType())
         self.copy_if_float_udf= udf(self.copy_if_float, StringType())
-
+        self.return_if_float_udf = udf(self.return_if_float, StringType())
         
 
 
@@ -91,18 +93,32 @@ class CommonFuncitons:
 
                 partner_encryption_value_dict = {
 
-                        'omop_partner_1'   :  'omop_partner_1',
-                        'pcornet_partner_1':  'pcornet_partner_1',
-
+                        'AVH':'FLH',
+                        'BND':'BND',
+                        'CHP':'CHP',
+                        'CHT':'CHT',
+                        'EMY':'EMY',
+                        'FLM':'FLM',
+                        'NCH':'NCH',
+                        'ORH':'ORH',
+                        'ORL':'ORL',
+                        'TMH':'TMH',
+                        'TMA':'TMA',
+                        'TMC':'TMC',
+                        'UAB':'UAB',
+                        'UFH':'UFH',
+                        'UMI':'UMI',
+                        'USF':'USF',
+                        'TGH':'TGH',
+                        'AMS':'AMS',
+                        'UCI':'UCI',
 
                 }
 
                 partner_encryption_value = partner_encryption_value_dict.get(cls.partner.upper(), None)
 
                 HASHING_KEY = SHA.new(SEED.encode('utf-8')).digest()
-                HASHING_KEY = SHA.new(SEED.encode('utf-8')).digest()
 
-                cipher = XOR.new(HASHING_KEY)
                 cipher = XOR.new(HASHING_KEY)
 
                 return b64encode(cipher.encrypt('{}{}'.format(partner_encryption_value, id))).decode()
@@ -144,16 +160,9 @@ class CommonFuncitons:
     def write_pyspark_output_file(cls,payspark_df, output_file_name, output_data_folder_path ):
         pass
 
-        # pcornet_cdm = PcornetCDM()
 
-        # print(pcornet_cdm.get_cdm_table_fields_list('demographic'))
     def write_pyspark_output_file(cls,payspark_df, output_file_name, output_data_folder_path ):
 
-        # pcornet_cdm = PcornetCDM()
-
-        # print(pcornet_cdm.get_cdm_table_fields_list('demographic'))
-
-        date_format_pattern = "yyyy-MM-dd"
         work_directory = output_data_folder_path+"tmp_"+output_file_name
 
         payspark_df = payspark_df.select([
@@ -162,14 +171,14 @@ class CommonFuncitons:
             else i.name
             for i in payspark_df.schema
             ])
-        
-        payspark_df.coalesce(1).write.format("csv").option("header", True).option("nullValue",None).option("delimiter", "\t").mode("overwrite").save(work_directory)
 
-        
 
-        command = ["cp", work_directory+"/part-*.csv", output_data_folder_path+output_file_name]
-        # Execute the command
-        subprocess.run(" ".join(command), shell=True)
+        payspark_df.write.format("csv").option("header", True).option("nullValue",None).option("delimiter", "\t").option("quote", "").mode("overwrite").save(work_directory)
+
+        output_file_path = os.path.join(output_data_folder_path, output_file_name).replace('temp_','')
+# Update the awk command to use the correct Python variable for the output path
+        command = f"awk 'FNR==1 && NR!=1{{next}} 1' {work_directory}/part-*.csv > {output_file_path}"
+        subprocess.run(command, shell=True, check=True)
 
         command = ["rm","-r", work_directory]
         # Execute the command
@@ -188,36 +197,6 @@ class CommonFuncitons:
         command = ["cp", "-p", os.path.join(data_folder_path, input_file_name), os.path.join(output_data_folder_path,output_file_name)]
                 # Execute the command
         subprocess.run(" ".join(command), shell=True)
-
-###################################################################################################################################
-# This function will 
-###################################################################################################################################
-
-    @classmethod
-
-    def apply_fix(cls,fix_type, fix_name, version, input_path, output_path,fixed_table_name,mapped_table_name,input_data_folder,partner_name, src1, src2):
-        # print(fix_type)
-
-        if fix_type == 'custom':
-            # print('custom')
-
-            partner_fix_path = f"/app/partners/{partner_name.lower()}/custom_fixes/{fix_name}/{version}.py"
-
-
-        if fix_type == 'common':
-
-            # print('common')
-            # cf.print_run_status(0, 0, f'{table}_deduplicator.py', os.path.split(input_folder)[1], partner)
-
-            partner_fix_path = f"/app/common/common_fixes/{fix_name}/{version}.py"
-
-        command = ["python", partner_fix_path, '-f', input_data_folder, '-t', mapped_table_name , '-p', partner_name,'-ftm',fixed_table_name, '-i',input_path,'-o',output_path, '-sr1', src1, '-sr2', src2]
-
-        subprocess.run(" ".join(command), shell=True)
-
-
-
-
 ###################################################################################################################################
 # This function will output the mapping gap for the passed formatted file name
 ###################################################################################################################################
@@ -279,9 +258,66 @@ class CommonFuncitons:
 
 
 
+###################################################################################################################################
+# This function will 
+###################################################################################################################################
+
+    @classmethod
+    def dv_match(cls,partner_name,folder,dv_mapping_table_path,fixed_table_path,table_name,output_path,dv_mapper_output_path ):
+
+            spark = cls.get_spark_session('DV MATCH')
+
+
+            if table_name != 'PROVIDER':
+
+            
+
+                try:
+
+                    fixed_table      = cls.spark_read(fixed_table_path, spark)
+                    dv_mapping_table = cls.spark_read(dv_mapping_table_path, spark)
+
+
+                    joind_df = fixed_table.join(dv_mapping_table, dv_mapping_table["ENCRYPTED_PATID"] == fixed_table['PATID'], how = 'inner')
+
+                    joind_df.show()
+
+                except Exception as e:
+                    cls.print_with_style(str(e), 'danger red')
+
+                finally:
+                    spark.stop()
+            else:
+
+                spark.stop()
 
 
 
+###################################################################################################################################
+# This function will 
+###################################################################################################################################
+
+    @classmethod
+
+    def apply_fix(cls,fix_type, fix_name, version, input_path, output_path,fixed_table_name,mapped_table_name,input_data_folder,partner_name, src1, src2):
+        # print(fix_type)
+
+        if fix_type == 'custom':
+            # print('custom')
+
+            partner_fix_path = f"/app/partners/{partner_name.lower()}/custom_fixes/{fix_name}/{version}.py"
+
+
+        if fix_type == 'common':
+
+            # print('common')
+            # cf.print_run_status(0, 0, f'{table}_deduplicator.py', os.path.split(input_folder)[1], partner)
+
+            partner_fix_path = f"/app/common/common_fixes/{fix_name}/{version}.py"
+
+        command = ["python", partner_fix_path, '-f', input_data_folder, '-t', mapped_table_name , '-p', partner_name,'-ftm',fixed_table_name, '-i',input_path,'-o',output_path, '-sr1', src1, '-sr2', src2]
+
+        subprocess.run(" ".join(command), shell=True)
 
 ###################################################################################################################################
 # This function will output the mapping gap for the passed formatted file name
@@ -292,6 +328,7 @@ class CommonFuncitons:
     @classmethod
     def get_mapping_gap(cls,partner,file_name,table_name, file_path,folder_name):
 
+        # print("*******   1 *****************************')
 
         
 
@@ -300,6 +337,7 @@ class CommonFuncitons:
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
         mapping_dicionaries_list = []
+        # print("*******   2 *****************************')
 
         for key, value in partner_dictionaries.__dict__.items():
             spark = SparkSession.builder.master("spark://master:7077").appName("MAPPING GAP").getOrCreate()
@@ -318,12 +356,24 @@ class CommonFuncitons:
 
                 field_name = temp_key.replace(prefix+file_name.lower()+'_',"").replace('_dict',"").upper()
 
+                
+
+                # get the aggreated data from the formatter for the field 
+
+                # print("*******   3 *****************************')
                 try:
 
                     aggregated_values = cls.get_aggregate_value_from_table(complete_file_path,field_name,spark)
+                    # print("*******   3  - 1  *****************************')
 
+                    # aggregated_values.show()
+
+                    # get and output the aggreated data that has mapping 
 
                     dictionary_dataframe = spark.createDataFrame(value.items(), ["dict_key", "dict_value"])
+                    # dictionary_dataframe.show()
+                    # aggregated_values.show()
+                    # print("*******   4 *****************************')
 
 
                     if 'UNIT' in field_name:
@@ -331,11 +381,39 @@ class CommonFuncitons:
                     else:
                         joined_df = aggregated_values.join(dictionary_dataframe, upper(dictionary_dataframe['dict_key'])==upper(aggregated_values[field_name]), how ="left").orderBy(desc("count"))
 
+                    # joined_df = aggregated_values.join(dictionary_dataframe, upper(dictionary_dataframe['dict_key'])==upper(aggregated_values[field_name]), how ="left")
+
+                    # joined_df.show()
+                    # print("*******   5 *****************************')
+
                     cls.diagnos_dictionary(dictionary_dataframe, file_path, key, file_name.lower())
+                    # print("*******   6 *****************************')
 
                     cls.daignos_mapping(joined_df, file_path, key, field_name, dictionary_dataframe, file_name.lower())
 
+                
+
+                    # print("*******   7 *****************************')
+
+                    # value_with_mapping =  spark.createDataFrame(dictionary_data.items(), ["GroupedName", "Value"])
+
+
+                    # get and output the aggregated tata that has no mapping
+
+                    # output a suggested new dicitonary
+
+
+
                     mapping_dicionaries_list.append(key)
+                    # print(field_name)
+
+            # Print the list of names
+            # print(mapping_dicionaries_list)
+
+
+                    # print("*******   8 *****************************')
+
+        
 
                     spark.stop()
 
@@ -670,7 +748,7 @@ class CommonFuncitons:
 
                     for row_idx, row in enumerate(combined_pd.values, 2):  # Start from row 2 (after header row)
                         for col_idx, value in enumerate(row, 1):
-                            cell = ws.cell(row=row_idx, column=col_idx, value=value)
+                            # cell = ws.cell(row=row_idx, column=col_idx, value=value)
 
                             # Calculate the width of the cell based on the length of the value
                             if isinstance(value, str):
@@ -718,20 +796,20 @@ class CommonFuncitons:
     def append_additional_fields(cls,mapped_df, file_name, deduplicated_data_folder_path,join_field, spark ):
 
 
-        # read the deduplicated file
-        deduplicated_file = spark.read.load(deduplicated_data_folder_path+file_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
+        # read the formatted file
+        formatted_file = spark.read.load(deduplicated_data_folder_path+file_name,format="csv", sep="\t", inferSchema="true", header="true", quote= '"')
         
-        #get the headers from the deduplicated and the mapped files for comparison
-        deduplicated_file_columns = deduplicated_file.columns
+        #get the headers from the formatted and the mapped files for comparison
+        formatted_file_columns = formatted_file.columns
         mapped_df_columns = mapped_df.columns
 
 
         # Identify common headers
-        common_headers = set(mapped_df_columns).intersection(deduplicated_file_columns)
+        common_headers = set(mapped_df_columns).intersection(formatted_file_columns)
         common_headers_without_the_join_field = [item for item in common_headers if item != join_field]
 
         # Drop common headers from the second DataFrame
-        additional_fields_data = deduplicated_file.drop(*common_headers_without_the_join_field)
+        additional_fields_data = formatted_file.drop(*common_headers_without_the_join_field)
         
         #Renaming the join field to avoid conflect during the join
         join_field_temp_name = join_field+"_new"
@@ -958,15 +1036,11 @@ class CommonFuncitons:
 ###################################################################################################################################
     @classmethod
     def get_schema_line(cls, file_path, field_name, field_data_type, spark):
-         
 
-        # print ("get_schema_line  for : #######################################################")
-        # print (field_name)
         harmonized_size =0 
 
         field_max_size = int(cls.get_max_feild_size_from_df(file_path,field_name, spark))
-        # print("field_max_size")
-        # print(field_max_size)
+
 
         if 'RDBMS Text' in field_data_type:
 
@@ -980,21 +1054,14 @@ class CommonFuncitons:
                     
                     if 'RAW' in field_name:
 
-                        # print("outside  RAW get_max_feild_size_from_df")
 
                         cdm_field_size  = cls.get_max_feild_size_from_df(file_path,field_name, spark)
 
                     else:
-                        # print("outside  ELSE get_max_feild_size_from_df")
+                    
 
                         cdm_field_size = harmonized_filed_sizes_dict.get(field_name,0)
                 
-
-
-                # print('cdm_field_size')
-                # print(cdm_field_size)
-                # print('field_max_size')
-                # print(field_max_size)
 
 
                 if int(cdm_field_size) > int(field_max_size):
@@ -1002,24 +1069,6 @@ class CommonFuncitons:
                 else:
                         field_size = field_max_size
 
-
-                        # cdm_field_size  = int(harmonized_filed_sizes_dict.get(field_name))
-                                              
-                        # if int(harmonized_filed_sizes_dict.get(field_name)) <   int(cls.get_max_feild_size_from_df(file_path,field_name, spark)):
-                        
-                        #                     cdm_field_size  =  cls.get_max_feild_size_from_df(file_path,field_name, spark)
-
-                # print('field_name')
-                # print(field_name)
-
-                # print('harmonized_size')
-                # print(harmonized_size)
-                
-                # print('field_max_size')
-                # print(field_max_size)
-
-                # print('cdm_field_size')
-                # print(cdm_field_size)
 
 
                 schema_line =     field_name +' '+ schema_type+"("+str(field_size)+"),\n"
@@ -1066,8 +1115,7 @@ class CommonFuncitons:
     @classmethod
     def get_schema(cls, file_name, table_path):
 
-        # print("*********** get_schema ")
-        # print(file_name)
+
 
         file_path = table_path+'fixed_'+file_name.lower()+".csv"
 
@@ -1083,8 +1131,7 @@ class CommonFuncitons:
         table_cdm = table_cdm_df.collect()
 
         for row in table_cdm:
-            # print(row["FIELD_NAME"])
-            # print(row["RDBMS_DATA_TYPE"])
+
 
             schema = schema + '\n' + cls.get_schema_line(file_path,row["FIELD_NAME"],row["RDBMS_DATA_TYPE"] , spark) 
 
@@ -1093,23 +1140,24 @@ class CommonFuncitons:
         schema = schema +"UPDATED VARCHAR(19),\n"
         schema = schema +"SOURCE VARCHAR(20)"
 
-        # schema = cls.remove_last_comma(schema)
-
-
-
-        # cdm_df = 
-
-        # schema_list = schema.split(",")
-
-
-        # for line in schema_list:
-        #     line.replace ''
-        # print(schema)
 
         spark.stop()
         return schema
 
 
+###################################################################################################################################
+# This function will verify the passed value is a float or it will return null
+###################################################################################################################################
+    @classmethod
+
+    def return_if_float(cls, val):
+        try:
+            float(val)
+            return val
+        except:
+            #Not a float
+            return None
+    
 
 
 
@@ -1281,3 +1329,78 @@ class CommonFuncitons:
             return str(datetime.strptime(input_date+ " 00:00:00","%Y-%m-%d %H:%M:%S"))
         except:
             return '1900-01-01 00:00:00'    
+        
+
+# #########################
+#     @classmethod
+#     def get_terminal_size(cls):
+#         """ Get the terminal size to adjust image dimensions. """
+#         import shutil
+#         size = shutil.get_terminal_size((80, 20))
+#         return size.columns, size.lines
+#     @classmethod
+#     def resize_image(cls,image, new_width):
+#         """ Resize the image to fit within the terminal. """
+#         width, height = image.size
+#         aspect_ratio = height / width
+#         new_height = int(new_width * aspect_ratio)
+#         resized_image = image.resize((80, 40))
+#         return resized_image
+#     @classmethod
+#     def convert_image_to_ansi(cls,image):
+#         """ Convert image to ANSI escape codes to display in terminal. """
+#         image = image.convert('RGB')
+#         pixels = image.load()
+#         width, height = image.size
+#         ascii_art = ""
+
+#         for y in range(height):
+#             for x in range(width):
+#                 r, g, b = pixels[x, y]
+#                 ascii_art += f"\033[48;2;{r};{g};{b}m "  # Use space character with background color
+#             ascii_art += "\033[0m\n"  # Reset color and move to the next line
+
+#         return ascii_art
+#     @classmethod
+#     def display_image_in_console(cls,image_path):
+#         """ Load the image and display it in the console with ANSI colors. """
+#         # Load the image
+#         try:
+#             image = Image.open(image_path)
+#         except Exception as e:
+#             print(f"Unable to open image: {e}")
+#             return
+
+#         # Get terminal size and adjust image width
+#         term_width, term_height = cls.get_terminal_size()
+#         image = cls.resize_image(image, new_width=80)
+
+#         # Convert image to ANSI and print it
+#         ascii_art = cls.convert_image_to_ansi(image)
+#         print(ascii_art)
+
+
+# ###################################################################################################################################
+# # T
+# ###################################################################################################################################
+
+
+
+   
+    @classmethod
+    def display_logo(  cls):
+        
+
+        img = Image.open('common/ovid_logo.png')
+        img.show() 
+
+
+#         # Path to the image file
+#         image_path = "common/ovid_logo.png"  # Replace with your image path
+
+#         # Display the image in the console
+#         cls.display_image_in_console(image_path)
+
+
+
+
