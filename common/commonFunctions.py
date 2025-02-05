@@ -154,11 +154,6 @@ class CommonFuncitons:
 # This function will output a pyspark dataframe and combine all the sub files into one file and delete the temprary files
 ###################################################################################################################################
 
-   
-
-    @classmethod
-    def write_pyspark_output_file(cls,payspark_df, output_file_name, output_data_folder_path ):
-        pass
 
 
     def write_pyspark_output_file(cls,payspark_df, output_file_name, output_data_folder_path ):
@@ -176,7 +171,8 @@ class CommonFuncitons:
         payspark_df.write.format("csv").option("header", True).option("nullValue",None).option("delimiter", "\t").option("quote", "").mode("overwrite").save(work_directory)
 
         output_file_path = os.path.join(output_data_folder_path, output_file_name).replace('temp_','')
-# Update the awk command to use the correct Python variable for the output path
+        
+        # Update the awk command to use the correct Python variable for the output path
         command = f"awk 'FNR==1 && NR!=1{{next}} 1' {work_directory}/part-*.csv > {output_file_path}"
         subprocess.run(command, shell=True, check=True)
 
@@ -206,55 +202,101 @@ class CommonFuncitons:
     @classmethod
     def deduplicate(cls,partner,file_name,table_name, file_path,folder_name):
 
-
-        # Set up the deduplicated files path
         deduplicated_files_path = file_path.replace('formatter', 'deduplicator')
-        duplicate_files_path = os.path.join(deduplicated_files_path, 'duplicate_values')
+        duplicates_file_path = os.path.join(deduplicated_files_path, 'duplicate_values')
+        duplicates_file_name  = file_name.lower()+'_duplicates.csv'
+        deduplicated_file_name  = 'deduplicated_'+file_name.lower()+'.csv'
 
         # Create the deduplicated files directory if it doesn't exist
         if not os.path.exists(deduplicated_files_path):
             os.makedirs(deduplicated_files_path)
 
-        if not os.path.exists(duplicate_files_path):
-            os.makedirs(duplicate_files_path)
+        if not os.path.exists(duplicates_file_path):
+            os.makedirs(duplicates_file_path)
 
-        input_file = f"{file_path}formatted_{file_name.lower()}.csv"
-        deduplicated_output_file = f"{deduplicated_files_path}deduplicated_{file_name.lower()}.csv"
-        duplicates_output_file = f"{duplicate_files_path}/{file_name.lower()}_duplicates.csv"
 
-        # Construct the gawk script based on the file_name
-        if file_name == 'ENROLLMENT':
-            gawk_script = f'''
-            BEGIN {{ FS = OFS = "," }}
-            NR == 1 {{ header = $0; print header > "{deduplicated_output_file}"; print header > "{duplicates_output_file}"; next }}
-            !seen[$1, $2, $5]++ {{ print > "{deduplicated_output_file}" }}
-            seen[$1, $2, $5] > 1 {{ print > "{duplicates_output_file}" }}
-            '''
-        
-        elif file_name == 'DEATH_CAUSE':
-            gawk_script = f'''
-            BEGIN {{ FS = OFS = "," }}
-            NR == 1 {{ header = $0; print header > "{deduplicated_output_file}"; print header > "{duplicates_output_file}"; next }}
-            !seen[$1, $2, $3, $4, $5]++ {{ print > "{deduplicated_output_file}" }}
-            seen[$1, $2, $3, $4, $5] > 1 {{ print > "{duplicates_output_file}" }}
-            '''
-        
-        else:
-            gawk_script = f'''
-            BEGIN {{ FS = OFS = "," }}
-            NR == 1 {{ header = $0; print header > "{deduplicated_output_file}"; print header > "{duplicates_output_file}"; next }}
-            !seen[$1]++ {{ print > "{deduplicated_output_file}" }}
-            seen[$1] > 1 {{ print > "{duplicates_output_file}" }}
-            '''
+        try:
 
-        # Construct the full shell command
-        command = f"awk '{gawk_script}' {input_file}"
-        # Execute the command
-        # try:
-        subprocess.run(command, shell=True, check=True)
-            # print(f"Deduplication completed for {file_name}. Output saved to {output_file}")
-        # except subprocess.CalledProcessError as e:
-        #     print(f"Error occurred while running gawk: {e}")
+
+            # Set up the deduplicated files path
+
+
+            input_file = f"{file_path}formatted_{file_name.lower()}.csv"
+            deduplicated_output_file = f"{deduplicated_files_path}deduplicated_{file_name.lower()}.csv"
+            duplicates_output_file = f"{duplicates_file_path}/{file_name.lower()}_duplicates.csv"
+
+            # Construct the gawk script based on the file_name
+            if file_name == 'ENROLLMENT':
+                gawk_script = f'''
+                BEGIN {{ FS = OFS = "\t" }}
+                NR == 1 {{ header = $0; print header > "{deduplicated_output_file}"; print header > "{duplicates_output_file}"; next }}
+                !seen[$1, $2, $5]++ {{ print > "{deduplicated_output_file}" }}
+                seen[$1, $2, $5] > 1 {{ print > "{duplicates_output_file}" }}
+                '''
+            
+            elif file_name == 'DEATH_CAUSE':
+                gawk_script = f'''
+                BEGIN {{ FS = OFS = "\t" }}
+                NR == 1 {{ header = $0; print header > "{deduplicated_output_file}"; print header > "{duplicates_output_file}"; next }}
+                !seen[$1, $2, $3, $4, $5]++ {{ print > "{deduplicated_output_file}" }}
+                seen[$1, $2, $3, $4, $5] > 1 {{ print > "{duplicates_output_file}" }}
+                '''
+            
+            else:
+                gawk_script = f'''
+                BEGIN {{ FS = OFS = "\t" }}
+                NR == 1 {{ header = $0; print header > "{deduplicated_output_file}"; print header > "{duplicates_output_file}"; next }}
+                !seen[$1]++ {{ print > "{deduplicated_output_file}" }}
+                seen[$1] > 1 {{ print > "{duplicates_output_file}" }}
+                '''
+
+            # Construct the full shell command
+            command = f"awk '{gawk_script}' {input_file}"
+
+            subprocess.run(command, shell=True, check=True)
+
+
+        except:
+
+            spark = cls.get_spark_session('generate mapping report')
+
+            try: 
+
+                spark = cls.get_spark_session('generate mapping report')
+
+                print('awk failed!!! trying Pyspark deduplicating')
+
+                df = cls.spark_read(f"{file_path}formatted_{file_name.lower()}.csv", spark)
+
+
+                if file_name == 'ENROLLMENT':
+                                
+                    columns_to_consider = [df.columns[0], df.columns[1], df.columns[4]]
+
+                            
+                elif file_name == 'DEATH_CAUSE':
+                                
+                    columns_to_consider = [df.columns[0], df.columns[1],df.columns[2],df.columns[3], df.columns[4]]
+                            
+                else:
+                    columns_to_consider = [df.columns[0]]
+
+
+
+                deduplicated_df = df.dropDuplicates(columns_to_consider)
+                duplicates_df = (df.groupBy(columns_to_consider).count().filter(col("count") > 1))
+
+                cls.write_pyspark_output_file(cls,deduplicated_df,deduplicated_file_name, deduplicated_files_path )
+                cls.write_pyspark_output_file(cls,duplicates_df,duplicates_file_name, duplicates_file_path )
+
+                spark.stop()
+
+            except Exception as e:
+
+                spark.stop()
+                
+                cls.print_with_style(str(e), 'danger red')
+
 
 
 
