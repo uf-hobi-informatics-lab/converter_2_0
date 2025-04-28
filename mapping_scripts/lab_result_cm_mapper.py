@@ -57,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/deduplicator_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' 
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -104,11 +104,13 @@ try:
                                     coalesce(mapping_specimen_source_dict[upper(col("SPECIMEN_SOURCE"))],col('SPECIMEN_SOURCE')).alias("SPECIMEN_SOURCE"),
                                     unmapped_lab_result_cm['LAB_LOINC'].alias("LAB_LOINC"),
                                     coalesce(mapping_lab_result_source_dict[upper(col("LAB_RESULT_SOURCE"))],col('LAB_RESULT_SOURCE')).alias("LAB_RESULT_SOURCE"),
+                                    unmapped_lab_result_cm['LAB_LOINC_SOURCE'].alias("LAB_LOINC_SOURCE"),
                                     coalesce(mapping_priority_dict[upper(col("PRIORITY"))],col('PRIORITY')).alias("PRIORITY"),
                                     coalesce(mapping_result_loc_dict[upper(col("RESULT_LOC"))],col('RESULT_LOC')).alias("RESULT_LOC"),
                                     unmapped_lab_result_cm['LAB_PX'].alias("LAB_PX"),
                                     coalesce(mapping_lab_px_type_dict[upper(col("LAB_PX_TYPE"))],col('LAB_PX_TYPE')).alias("LAB_PX_TYPE"),
                                     cf.get_date_from_date_str_with_default_value_udf(unmapped_lab_result_cm['LAB_ORDER_DATE']).alias("LAB_ORDER_DATE"),
+                                    unmapped_lab_result_cm['SPECIMEN_DATE'].alias("SPECIMEN_DATE"),
                                     unmapped_lab_result_cm['SPECIMEN_TIME'].alias("SPECIMEN_TIME"),
                                     unmapped_lab_result_cm['RESULT_DATE'].alias("RESULT_DATE"),
                                     unmapped_lab_result_cm['RESULT_TIME'].alias("RESULT_TIME"),

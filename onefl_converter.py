@@ -9,27 +9,23 @@ from pyspark.sql import SparkSession
 import argparse
 from datetime import datetime
 import pytz
-from settings import schemas
+from settings import  VALID_JOBS
+
+from PIL import Image
 
 
 spark = SparkSession.builder.master("spark://master:7077").appName("Initial Run").getOrCreate()
 spark.sparkContext.setLogLevel('OFF')
 spark.stop()
 
-print("""
-
-                            ▄█  ░█▀▀▀ ░█       ░█▀▀█ ░█ ░█  █▀▀█ ░█▄ ░█ ░█▀▀█ ░█▀▀▀ ▀█▀ ░█▄ ░█  █▀▀█ ▀▀█▀▀ ░█▀▀▀█ ░█▀▀█ 
-                             █  ░█▀▀▀ ░█    ▀▀ ░█    ░█▀▀█ ░█▄▄█ ░█░█░█ ░█ ▄▄ ░█▀▀▀ ░█  ░█░█░█ ░█▄▄█  ░█   ░█  ░█ ░█▄▄▀ 
-                            ▄█▄ ░█    ░█▄▄█    ░█▄▄█ ░█ ░█ ░█ ░█ ░█  ▀█ ░█▄▄█ ░█▄▄▄ ▄█▄ ░█  ▀█ ░█ ░█  ░█   ░█▄▄▄█ ░█ ░█
-
-                                                                                                                                                            
-                                                                              """
-                                                   )
 
 
 
 
 
+
+
+ 
 
 job_num = 0
 
@@ -48,7 +44,7 @@ parser.add_argument("-t", "--table", nargs="+")
 parser.add_argument("-db", "--database")
 parser.add_argument("-s", "--db_server")
 parser.add_argument("-f", "--data_folder",nargs="+")
-
+parser.add_argument("-dt", "--database_type")
 
 
 
@@ -60,14 +56,28 @@ input_tables = args.table
 input_db = args.database
 input_db_server = args.db_server
 input_data_folders = args.data_folder
+input_db_type = args.database_type
 
 
 
 
 cf =CommonFuncitons(input_partner)
 
+
+# cf.display_logo()
+# sys.exit()
+
+print("""
+
+                            ▄█  ░█▀▀▀ ░█       ░█▀▀█ ░█ ░█  █▀▀█ ░█▄ ░█ ░█▀▀█ ░█▀▀▀ ▀█▀ ░█▄ ░█  █▀▀█ ▀▀█▀▀ ░█▀▀▀█ ░█▀▀█ 
+                             █  ░█▀▀▀ ░█    ▀▀ ░█    ░█▀▀█ ░█▄▄█ ░█░█░█ ░█ ▄▄ ░█▀▀▀ ░█  ░█░█░█ ░█▄▄█  ░█   ░█  ░█ ░█▄▄▀ 
+                            ▄█▄ ░█    ░█▄▄█    ░█▄▄█ ░█ ░█ ░█ ░█ ░█  ▀█ ░█▄▄█ ░█▄▄▄ ▄█▄ ░█  ▀█ ░█ ░█  ░█   ░█▄▄▄█ ░█ ░█
+
+                                                                                                                                                            
+                                                                              """
+                                                   )
+
 ###################################################################################################################################
-# This function will get all the created formatter python script and return a list of thier names
 # This function will get all the created formatter python script and return a list of thier names
 ###################################################################################################################################
 def get_partner_formatters_list(partner):
@@ -85,7 +95,6 @@ def get_partner_formatters_list(partner):
 
 ###################################################################################################################################
 # This function will get all the created formatter python script and return a list of thier names
-# This function will get all the created formatter python script and return a list of thier names
 ###################################################################################################################################
 def get_partner_fixers_list(partner):
 
@@ -98,7 +107,6 @@ def get_partner_fixers_list(partner):
     return partner_fixers_list
 
 ###################################################################################################################################
-# This function will get all the created mappers python script and return a list of thier names
 # This function will get all the created mappers python script and return a list of thier names
 ###################################################################################################################################
 
@@ -144,11 +152,6 @@ def get_partner_formatted_files_list(folder_path):
         return formatted_tables_list
 
 
-
-
-
-
-
 ###################################################################################################################################
 # This function will run the formatter script for a single table
 ###################################################################################################################################
@@ -183,6 +186,46 @@ def run_fixer(partner, fixer, folder):
     # Execute the command
     subprocess.run(" ".join(command), shell=True)
 
+###################################################################################################################################
+# This function will run the deduplicator script for a single table
+###################################################################################################################################
+
+def run_deduplicator(partner, input_folder, output_folder):
+
+    global job_num
+
+    # process duplicates for each tablle
+    for table in input_tables:
+        job_num = job_num +1
+        cf.print_run_status(job_num, total_jobs_count, f'{table}_deduplicator.py', os.path.split(input_folder)[1], partner)
+
+        command = ["python", "/app/deduplicator.py", '-f', input_folder, '-of', output_folder , '-t' ]
+
+        # add table list
+        command.append(table)
+
+        # Execute the command
+        subprocess.run(" ".join(command), shell=True)
+###################################################################################################################################
+# This function will run the deduplicator script for a single table
+###################################################################################################################################
+
+def run_deduplicator(partner, input_folder, output_folder):
+
+    global job_num
+
+    # process duplicates for each tablle
+    for table in input_tables:
+        job_num = job_num +1
+        cf.print_run_status(job_num, total_jobs_count, f'{table}_deduplicator.py', os.path.split(input_folder)[1], partner)
+
+        command = ["python", "/app/deduplicator.py", '-f', input_folder, '-of', output_folder , '-t' ]
+
+        # add table list
+        command.append(table)
+
+        # Execute the command
+        subprocess.run(" ".join(command), shell=True)
 
 ###################################################################################################################################
 # This function will run the mapper script for a single table
@@ -201,7 +244,6 @@ def run_mapper(partner, mapper, folder):
     
 
 ###################################################################################################################################
-# This function will run the formatter scripts specified by the user
 # This function will run the formatter scripts specified by the user
 ###################################################################################################################################
 def run_formatters_jobs(folder):
@@ -225,8 +267,7 @@ def run_formatters_jobs(folder):
 
 
 ###################################################################################################################################
-# This function will run the formatter scripts specified by the user
-# This function will run the formatter scripts specified by the user
+# This function will run the fixer scripts specified by the user
 ###################################################################################################################################
 def run_fixers_jobs(folder):
 
@@ -235,28 +276,34 @@ def run_fixers_jobs(folder):
 
         partner_fixers_list = get_partner_fixers_list(input_partner)
 
+        non_loinc_fixers = [fixer for fixer in partner_fixers_list if "loinc" not in fixer.lower()]
+        loinc_mover_fixers = [fixer for fixer in partner_fixers_list if "loinc" in fixer.lower()]
+        
         total_fixers_count = len(partner_fixers_list)
-
-        for fixer  in partner_fixers_list:
-            run_fixer(input_partner,fixer,folder)
+        
+        # Run all non-loinc fixers
+        for fixer in non_loinc_fixers:
+            run_fixer(input_partner, fixer, folder)
+        
+        # Run the loinc_mover
+        for fixer in loinc_mover_fixers:
+            run_fixer(input_partner, fixer, folder)
             
     else:
+        # Run all specified fixers except loinc_mover
+        specified_fixers = [table.lower() for table in input_tables if table.lower() != "loinc"]
 
-        for table in input_tables:
-
-            fixer = table.lower()+"_fixer.py"
-            run_fixer(input_partner,fixer, folder)
-
-
-
-###################################################################################################################################
-# This function will get all the list names of all the mapped files
-###################################################################################################################################
-
+        for fixer in specified_fixers:
+            run_fixer(input_partner, fixer + "_fixer.py", folder)
+            
+        # If loinc_mover was specified
+        if "loinc" in [table.lower() for table in input_tables]:
+            run_fixer(input_partner, "loinc_fixer.py", folder)
 
 
 ###################################################################################################################################
-
+# This function will run the deduplicators script
+###################################################################################################################################
 
 def run_deduplicator_jobs(folder):
 
@@ -303,8 +350,8 @@ def run_deduplicator_jobs(folder):
                          file_path= formatted_files_list_path,
                          folder_name = folder
                           )
+
 ###################################################################################################################################
-# This function will run the mapper scripts specified by the user
 # This function will run the mapper scripts specified by the user
 ###################################################################################################################################
 
@@ -366,7 +413,7 @@ def run_mapping_gap_jobs(folder):
             formatted_table_name = "formatted_"+table.lower()+".csv"
 
             job_num = job_num +1
-            cf.print_run_status(job_num,total_jobs_count, f"mapping gap for  {formatted_table_name}", folder, input_partner)
+            cf.print_run_status(job_num,total_jobs_count, f"mapping gap for {formatted_table_name}", folder, input_partner)
 
 
             cf.get_mapping_gap(
@@ -391,7 +438,7 @@ def run_mapping_report_job(folder):
 
     job_num = job_num +1
 
-    cf.print_run_status(job_num,total_jobs_count, f" Generating the mapping report ", folder, input_partner)
+    cf.print_run_status(job_num,total_jobs_count, f"Generating the mapping report ", folder, input_partner)
 
     cf.generate_mapping_report(
 
@@ -431,15 +478,16 @@ def run_upload_jobs(folder):
 
                 # schema = schemas.get(table_name.upper(), None)
 
-                schema = cf.get_schema( table_name.upper(), fixed_files_path)
+                schemas = cf.get_schemas( table_name.upper(), fixed_files_path)
 
                 cf.db_upload(db= input_db,
                             db_server=input_db_server,
-                            schema=schema,
+                            schemas=schemas,
                             file_name=file_name, 
                             table_name = table_name.upper(),
-                            file_path= fixed_files_path,
-                            folder_name = folder
+                            file_path= fixed_files_path, 
+                            folder_name = folder,
+                            db_type = input_db_type
                             )
         else:
 
@@ -456,15 +504,16 @@ def run_upload_jobs(folder):
 
                     # schema = schemas.get(table.upper(), None)
 
-                    schema = cf.get_schema(table.upper(),fixed_files_path)
+                    schemas = cf.get_schemas(table.upper(),fixed_files_path)
 
                     cf.db_upload(db= input_db,
                                 db_server=input_db_server,
-                                schema=schema,
+                                schemas=schemas,
                                 file_name=fixed_table_name, 
                                 table_name = table.upper(),
                                 file_path= fixed_files_path,
-                                folder_name = folder
+                                folder_name = folder,
+                                db_type = input_db_type
                                 )
                     
 
@@ -490,11 +539,10 @@ if  not cf.valid_partner_name(input_partner):
     sys.exit()
 
 
-valid_jobs = ['all','map','format','deduplicate','upload', 'mapping_gap','mapping_report','fix']
 
 for job in input_jobs:
    
-    if job not in valid_jobs:
+    if job not in VALID_JOBS:
 
         print(job+ " is not a valid job!!!!!! Please enter a valid job name eg. -j format or -j deduplicate or -j map, or -j all")
         
@@ -574,6 +622,46 @@ total_jobs_count = folders_count * jobs_count * tables_count
 
 
 ###################################################################################################################################
+# This function will run the dv_mapper script for tables specified by the user 
+###################################################################################################################################
+
+def run_dv_mapper_jobs(folder ):
+    global job_num
+    total_jobs_count = len(input_tables)
+    job_num = 0
+
+    # spark = SparkSession.builder \
+    #     .appName("Update PATID Column") \
+    #     .config("spark.sql.shuffle.partitions", "1000") \
+    #     .getOrCreate()
+
+    # Read the mapping table once
+
+    
+    dv_mapping_table_path = f'/app/partners/{input_partner}/data/dv_match/{folder}/DV_ORIGINAL_PATID_MAPPING.csv'
+    dv_mapper_output_path = f'/app/partners/{input_partner}/data/dv_mapper_output/{folder}/'
+    fixed_table_path      = f'/app/partners/{input_partner}/data/fixer_output/{folder}/'
+   
+    for table_name in input_tables:
+        job_num += 1
+        cf.print_run_status(job_num, total_jobs_count, f" mapping {table_name} to Datavant ids", "", "")
+
+
+        cf.dv_match(partner_name=input_partner,
+                    folder=folder,
+                    dv_mapping_table_path=dv_mapping_table_path,
+                    fixed_table_path = fixed_table_path,
+                    table_name=table_name,
+                    output_path=dv_mapper_output_path,
+                    dv_mapper_output_path=dv_mapper_output_path
+            
+                )
+
+
+
+
+
+###################################################################################################################################
 # submitting the jobs to be run
 ###################################################################################################################################
  
@@ -613,8 +701,15 @@ for folder in input_data_folders:
         if  'fix' in input_jobs:
             run_fixers_jobs(folder)
 
+        if  'dv_map' in input_jobs:
+            run_dv_mapper_jobs(folder)
+
         if  'upload' in input_jobs:
             run_upload_jobs(folder)
+
+        if  'dv_upload' in input_jobs:
+            run_upload_dv_jobs(folder)
+
 
         
 

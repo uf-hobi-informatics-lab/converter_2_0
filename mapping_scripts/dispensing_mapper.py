@@ -57,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/deduplicator_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' 
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -71,8 +71,9 @@ try:
 
         spark = cf.get_spark_session("dispensing_mapper")
 
-        unmapped_dispensing = spark.read.option("inferSchema", "false").load(deduplicated_data_folder_path+"deduplicated_dispensing.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
+        #unmapped_dispensing = spark.read.option("inferSchema", "false").load(deduplicated_data_folder_path+"deduplicated_dispensing.csv",format="csv", sep="\t", inferSchema="true", header="true",  quote= '"')
     
+        unmapped_dispensing  = cf.spark_read(deduplicated_data_folder_path+"deduplicated_dispensing.csv", spark)
 
     ###################################################################################################################################
     # create the mapping from the dictionaries
@@ -94,7 +95,7 @@ try:
                                     cf.encrypt_id_udf(unmapped_dispensing['DISPENSINGID']).alias("DISPENSINGID"),
                                     cf.encrypt_id_udf(unmapped_dispensing['PATID']).alias("PATID"),
                                     cf.encrypt_id_udf(unmapped_dispensing['PRESCRIBINGID']).alias("PRESCRIBINGID"),
-                                    cf.get_date_from_datetime_udf(unmapped_dispensing['DISPENSE_DATE']).alias("DISPENSE_DATE"),
+                                    unmapped_dispensing['DISPENSE_DATE'].alias("DISPENSE_DATE"),
                                     unmapped_dispensing['NDC'].alias("NDC"),
                                     mapping_dispense_source_dict[upper(col("DISPENSE_SOURCE"))].alias("DISPENSE_SOURCE"),
                                     unmapped_dispensing['DISPENSE_SUP'].alias("DISPENSE_SUP"),

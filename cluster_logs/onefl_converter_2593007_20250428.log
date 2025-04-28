@@ -1,0 +1,15 @@
+2025-04-28 12:17:29 INFO - Initializing cluster with the following settings:
+2025-04-28 12:17:29 INFO - Session ID: onefl_converter_2593007_20250428
+2025-04-28 12:17:29 INFO - Data Dir: /data/inboxarchive/
+2025-04-28 12:17:29 INFO - Work Dir: /processing/ali_n/ali_branches/github/converter_2_0
+2025-04-28 12:17:29 INFO - Out Dir: /processing/ali_n/ali_branches/github/converter_2_0
+2025-04-28 12:17:29 INFO - File: onefl_converter.py
+2025-04-28 12:17:29 INFO - Args: ['-p', 'omop_partner_plus', '-t', 'all', '-j']
+2025-04-28 12:17:29 INFO - Master memory: 2g
+2025-04-28 12:17:29 INFO - Worker memory: 8g
+2025-04-28 12:17:29 INFO - Creating the cluster directory for onefl_converter_2593007_20250428
+2025-04-28 12:17:29 INFO - Successfully wrote onefl_converter_2593007_20250428 to /processing/ali_n/converter_cluster//clusters/onefl_converter_2593007_20250428/docker-compose.yml
+2025-04-28 12:17:29 INFO - Booting the cluster for onefl_converter_2593007_20250428
+2025-04-28 12:17:43 INFO - Shutting down cluster with session id: onefl_converter_2593007_20250428
+2025-04-28 12:18:05 INFO - Removing cluster directory for onefl_converter_2593007_20250428
+2025-04-28 12:18:05 INFO - Processed finished in 00:00:36.40

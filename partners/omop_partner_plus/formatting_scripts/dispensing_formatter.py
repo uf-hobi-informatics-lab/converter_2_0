@@ -49,7 +49,11 @@ try:
 
     concept       = cf.spark_read(concept_table_path,spark)
     drug_concept = concept.filter(concept.domain_id == 'Drug').withColumnRenamed("concept_name", "drug_concept_name").withColumnRenamed("vocabulary_id", "drug_vocabulary_id").withColumnRenamed("concept_code", "drug_concept_code")
+    drug_concept = broadcast(drug_concept)
+
+   
     dispensed_drug_type_concept = concept.filter((col("domain_id") == "Type Concept") & (col("concept_name").rlike(r"(?i)dispens")))
+    dispensed_drug_type_concept = broadcast(dispensed_drug_type_concept)
 
     joined_drug_exposure = drug_exposure.join(dispensed_drug_type_concept, dispensed_drug_type_concept['concept_id']==drug_exposure['drug_type_concept_id'], how='inner').drop("concept_id")\
                                             .join(drug_concept, drug_concept['concept_id']==drug_exposure['drug_concept_id'], how='left').drop("concept_id")\

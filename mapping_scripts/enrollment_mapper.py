@@ -57,7 +57,7 @@ try:
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
                 
-        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' 
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 

@@ -66,20 +66,24 @@ try:
     joined_df = input_table.join(small_encounter_table, input_table['ENCOUNTERID']==small_encounter_table['SOURCE_ENCOUNTERID'], how="left")
 
 
-    bad_records = joined_df.filter(col('SOURCE_ENCOUNTERID').isNull()).select('ENCOUNTERID')
-
-    joined_df =  joined_df.withColumn('ENCOUNTERID', col('SOURCE_ENCOUNTERID'))
-
-
-
+    bad_records_with_counts = (
+        joined_df.filter(col('SOURCE_ENCOUNTERID').isNull())
+                .groupBy('ENCOUNTERID')
+                .agg(count("*").alias("count")))
 
 
-    fixed_df = joined_df.drop('SOURCE_ENCOUNTERID')
-                                                                                                        
+    fixed_df = joined_df.drop('ENCOUNTERID')
+
+    fixed_df =  fixed_df.withColumnRenamed( 'SOURCE_ENCOUNTERID', 'ENCOUNTERID')
 
 
-                                                                                                
+    original_columns = input_table.columns
+    updated_columns = ["ENCOUNTERID" if c == "SOURCE_ENCOUNTERID" else c for c in original_columns]
+    fixed_df = fixed_df.select(*updated_columns)
 
+
+
+                                                                                 
 
     cf.write_pyspark_output_file(
                             payspark_df = fixed_df,
@@ -88,7 +92,7 @@ try:
 
 
     cf.write_pyspark_output_file(
-                            payspark_df = bad_records,
+                            payspark_df = bad_records_with_counts,
                             output_file_name = f"{examined_table_name.replace('.csv','')}_missing_encounterids_.csv" ,
                             output_data_folder_path= output_data_folder_path+ "/fixers_output/"+examined_table_name_parsed+"_fixer/"+this_fix_name+"/")
 

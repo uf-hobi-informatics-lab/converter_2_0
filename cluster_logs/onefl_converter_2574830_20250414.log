@@ -1,0 +1,15 @@
+2025-04-14 08:41:31 INFO - Initializing cluster with the following settings:
+2025-04-14 08:41:31 INFO - Session ID: onefl_converter_2574830_20250414
+2025-04-14 08:41:31 INFO - Data Dir: /data/inboxarchive/
+2025-04-14 08:41:31 INFO - Work Dir: /processing/ali_n/ali_branches/bitbucket/EMY_7_0_formatters/ovid
+2025-04-14 08:41:31 INFO - Out Dir: /processing/ali_n/ali_branches/bitbucket/EMY_7_0_formatters/ovid
+2025-04-14 08:41:31 INFO - File: onefl_converter.py
+2025-04-14 08:41:31 INFO - Args: ['-p', 'emy_plus', '-f', 'onefl_omop_test_data', '-j', 'format', '-t', 'lds_address_history']
+2025-04-14 08:41:31 INFO - Master memory: 2g
+2025-04-14 08:41:31 INFO - Worker memory: 8g
+2025-04-14 08:41:31 INFO - Creating the cluster directory for onefl_converter_2574830_20250414
+2025-04-14 08:41:31 INFO - Successfully wrote onefl_converter_2574830_20250414 to /processing/ali_n/converter_cluster//clusters/onefl_converter_2574830_20250414/docker-compose.yml
+2025-04-14 08:41:31 INFO - Booting the cluster for onefl_converter_2574830_20250414
+2025-04-14 08:41:56 INFO - Shutting down cluster with session id: onefl_converter_2574830_20250414
+2025-04-14 08:42:19 INFO - Removing cluster directory for onefl_converter_2574830_20250414
+2025-04-14 08:42:19 INFO - Processed finished in 00:00:47.37

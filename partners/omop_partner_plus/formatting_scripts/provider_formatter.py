@@ -71,7 +71,11 @@ try:
 
     concept = cf.spark_read(concept_table_path,spark)
     provider_specialty_concept = concept.filter((col("domain_id") == "Provider") & ((col("vocabulary_id") == "NUCC"))).withColumnRenamed("concept_code", "provider_specialty_concept_code")
+    provider_specialty_concept = broadcast(provider_specialty_concept)
+
     geneder_concept            = concept.filter(concept.domain_id == 'Gender').withColumnRenamed("concept_code", "gender_concept_code")
+    geneder_concept = broadcast(geneder_concept)
+
     omop_provider     = spark.read.load(input_data_folder_path+omop_provider_table_name    ,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
     omop_provider_sup = spark.read.load(input_data_folder_path+omop_provider_sup_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
     omop_provider_sup = omop_provider_sup.withColumnRenamed("provider_id", "provider_id_sup")

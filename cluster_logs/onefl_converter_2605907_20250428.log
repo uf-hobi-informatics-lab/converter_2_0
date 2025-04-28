@@ -1,0 +1,12 @@
+2025-04-28 12:18:18 INFO - Initializing cluster with the following settings:
+2025-04-28 12:18:18 INFO - Session ID: onefl_converter_2605907_20250428
+2025-04-28 12:18:18 INFO - Data Dir: /data/inboxarchive/
+2025-04-28 12:18:18 INFO - Work Dir: /processing/ali_n/ali_branches/github/converter_2_0
+2025-04-28 12:18:18 INFO - Out Dir: /processing/ali_n/ali_branches/github/converter_2_0
+2025-04-28 12:18:18 INFO - File: onefl_converter.py
+2025-04-28 12:18:18 INFO - Args: ['-p', 'omop_partner_plus', '-t', 'all', '-j', 'upload', '-f', 'onefl_omop_test_data', '-s', 'ufoneflorida-azure_eastus2', '-dt', 'sf', '-db', 'sandbox']
+2025-04-28 12:18:18 INFO - Master memory: 2g
+2025-04-28 12:18:18 INFO - Worker memory: 8g
+2025-04-28 12:18:18 INFO - Creating the cluster directory for onefl_converter_2605907_20250428
+2025-04-28 12:18:18 INFO - Successfully wrote onefl_converter_2605907_20250428 to /processing/ali_n/converter_cluster//clusters/onefl_converter_2605907_20250428/docker-compose.yml
+2025-04-28 12:18:18 INFO - Booting the cluster for onefl_converter_2605907_20250428

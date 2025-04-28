@@ -58,7 +58,11 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/deduplicator_output/'+ input_data_folder+'/'
+        #deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/deduplicator_output/'+ input_data_folder+'/'
+        #deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' + 'generated_deduplicates' + '/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' 
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -112,6 +116,7 @@ try:
                                     unmapped_obs_gen['OBSGEN_TABLE_MODIFIED'].alias("OBSGEN_TABLE_MODIFIED"),
                                     unmapped_obs_gen['OBSGEN_ID_MODIFIED'].alias("OBSGEN_ID_MODIFIED"),                             
                                     coalesce(mapping_obsgen_source_dict[upper(col("OBSGEN_SOURCE"))],col('OBSGEN_SOURCE')).alias("OBSGEN_SOURCE"),
+                                    unmapped_obs_gen['OBSGEN_ABN_IND'].alias("OBSGEN_ABN_IND"),
                                     unmapped_obs_gen['RAW_OBSGEN_NAME'].alias("RAW_OBSGEN_NAME"),
                                     unmapped_obs_gen['RAW_OBSGEN_CODE'].alias("RAW_OBSGEN_CODE"),
                                     unmapped_obs_gen['RAW_OBSGEN_TYPE'].alias("RAW_OBSGEN_TYPE"),

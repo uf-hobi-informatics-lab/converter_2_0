@@ -57,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/deduplicator_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' 
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -98,7 +98,7 @@ try:
                                     coalesce(mapping_death_cause_match_confidence_dict[upper(col('DEATH_CAUSE_CONFIDENCE'))],col('DEATH_CAUSE_CONFIDENCE')).alias("DEATH_CAUSE_CONFIDENCE"),
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),
-                                    # unmapped_death_cause['PATID'].alias("JOIN_FIELD"),
+                                    unmapped_death_cause['PATID'].alias("JOIN_FIELD"),
 
 
                                                             )
@@ -108,16 +108,16 @@ try:
     ###################################################################################################################################
 
 
-        # death_cause_with_additional_fileds = cf.append_additional_fields(
-        #     mapped_df = death_cause,
-        #     file_name = "deduplicated_death_cause.csv",
-        #     deduplicated_data_folder_path = deduplicated_data_folder_path,
-        #     join_field = "PATID",
-        #     spark = spark)
+        death_cause_with_additional_fileds = cf.append_additional_fields(
+            mapped_df = death_cause,
+            file_name = "deduplicated_death_cause.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
+            join_field = "PATID",
+            spark = spark)
  
 
         cf.write_pyspark_output_file(
-                        payspark_df = death_cause,
+                        payspark_df = death_cause_with_additional_fileds,
                         output_file_name = "mapped_death_cause.csv",
                         output_data_folder_path= mapped_data_folder_path)
 

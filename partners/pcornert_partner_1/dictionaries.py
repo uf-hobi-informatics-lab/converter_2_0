@@ -530,6 +530,52 @@ demographic_pat_pref_language_spoken_dict = {
 
 
 
+demographic_race_eth_missing_dict = {
+
+       "REFUSED"            :  "R",
+       "NO INFORMATION"     :  "NI",
+       "UNKNOWN"            :  "UN",
+       "OTHER"              :  "OT",
+}
+
+demographic_race_eth_ai_an_dict = {
+
+       "YES"     :  "Y",
+}
+
+demographic_race_eth_asian_dict = {
+
+       "YES"     :  "Y",
+}
+
+demographic_race_eth_black_dict = {
+
+       "YES"     :  "Y",
+}
+
+demographic_race_eth_hispanic_dict = {
+
+       "YES"     :  "Y",
+}
+
+demographic_race_eth_me_na_dict = {
+
+       "YES"     :  "Y",
+}
+
+demographic_race_eth_nh_pi_dict = {
+
+       "YES"     :  "Y",
+}
+
+demographic_race_eth_white_dict = {
+
+       "YES"     :  "Y",
+}
+
+
+
+
 # ▓█████ ███▄    █ ▄████▄  ▒█████  █    ██ ███▄    █▄▄▄█████▓█████ ██▀███  
 # ▓█   ▀ ██ ▀█   █▒██▀ ▀█ ▒██▒  ██▒██  ▓██▒██ ▀█   █▓  ██▒ ▓▓█   ▀▓██ ▒ ██▒
 # ▒███  ▓██  ▀█ ██▒▓█    ▄▒██░  ██▓██  ▒██▓██  ▀█ ██▒ ▓██░ ▒▒███  ▓██ ░▄█ ▒
@@ -30393,6 +30439,68 @@ lds_address_history_address_preferred_dict = {
 
 # # ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         "YES": "Y",
+
+
+}
+
+
+
+#### external_medss
+
+
+external_meds_ext_dose_ordered_unit_dict = {
+    
+
+       ""                  :  "OT",
+       "drop"              :  "OT",   
+
+}
+
+external_meds_ext_dose_form_dict = {
+    
+       ""                  :  "OT",
+       "403818"            :  "OT",
+       "861200"            :  "OT",
+       "313002"            :  "OT", 
+
+}
+
+external_meds_ext_route_dict = {
+    
+        "":""
+
+}
+
+external_meds_ext_basis_dict = {
+    
+        "PATIENT-REPORTED"                                      :"01",
+        "EXTERNAL HEALTH SYSTEM / HEALTH INFORMATION EXCHANGE"  :"02",
+        "NO INFORMATION"                                        :"NI",
+        "UNKNOWN"                                               :"UN",
+        "OTHER"                                                 :"OT",
+        "RXNORM"                                                 :"OT",
+
+
+}
+
+external_meds_extmed_source_dict = {
+    
+        "":""
+
+}
+
+#### pat_relationship 
+
+pat_relationship_relationship_type_dict = {
+
+       "BIRTH MOTHER-CHILD"      :  "01",
+       "PARENT-CHILD"            :  "02",
+       "LEGAL GUARDIAN - CHILD"  :  "03",   
+       "SPOUSE OR PARTNER"       :  "04",   
+       "SIBLING"                 :  "05",   
+       "GRANDPARENT-GRANDCHILD"  :  "06",   
+       "OTHER"                   :  "07",   
+       ""                        :  "07", #Other
 
 
 }

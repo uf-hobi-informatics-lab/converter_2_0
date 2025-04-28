@@ -115,11 +115,20 @@ try:
 
         concept       = cf.spark_read(concept_table_path,spark)
         visit_concept = concept.filter(concept.domain_id == 'Visit').withColumnRenamed("concept_name", "visit_concept_name")
+        visit_concept = broadcast(visit_concept)
+
         admitting_concept = concept.filter(concept.domain_id == 'Place of service').withColumnRenamed("concept_name", "admitting_concept_name")
+        admitting_concept = broadcast(admitting_concept)
+
         discharge_to_concept = concept.filter(concept.domain_id == 'Place of service').withColumnRenamed("concept_name", "discharge_to_concept_name")
+        discharge_to_concept = broadcast(discharge_to_concept)
 
         care_site        = spark.read.load(input_data_folder_path+care_site_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"').withColumnRenamed("care_site_id",      "source_care_site_id")
+        care_site = broadcast(care_site)
+
         location         = spark.read.load(input_data_folder_path+location_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"').withColumnRenamed("location_id",        "source_location_id")
+        location = broadcast(location)
+
         visit_payer      = spark.read.load(input_data_folder_path+visit_payer_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
 
 

@@ -30,18 +30,22 @@ try:
     concept_table_path                      = f'/app/common/omop_cdm/CONCEPT.csv'
 
 
-    omop_death_table_name = 'death_v7.txt'
+    omop_death_table_name = 'death.csv'
     omop_death_sup_table_name = 'death_sup.*'
 
 
     omop_death = spark.read.load(input_data_folder_path+omop_death_table_name, format="csv", sep="\t", inferSchema="false", header="true", quote='"')
-    omop_death_sup = spark.read.load(input_data_folder_path+omop_death_sup_table_name, format="csv", sep=",", inferSchema="false", header="true", quote='"')
+    omop_death_sup = spark.read.load(input_data_folder_path+omop_death_sup_table_name, format="csv", sep="\t", inferSchema="false", header="true", quote='"')\
+                                .withColumnRenamed("person_id", "person_sup_id")
+        
     concept = cf.spark_read(concept_table_path,spark)
 
     death_cause_source = concept.filter(concept.domain_id == 'Observation').withColumnRenamed("concept_name", "death_cause_name")\
                                                                            .withColumnRenamed("concept_code", "death_cause_code")\
                                                                            .withColumnRenamed("vocabulary_id", "death_cause_type")
 
+    death_cause_source = broadcast(death_cause_source)
+    
     joined_omop_death = omop_death.join(omop_death_sup, omop_death_sup['person_sup_id']== omop_death['person_id'], how = 'left')\
                                   .join(death_cause_source, death_cause_source['concept_id']== omop_death['cause_concept_id'], how = 'left')
 

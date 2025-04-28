@@ -13,7 +13,7 @@ from commonFunctions import CommonFuncitons
 import argparse
 
 
-cf = CommonFuncitons('USF')
+cf = CommonFuncitons('omop_partner_plus')
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--data_folder")
@@ -37,7 +37,7 @@ try:
 
     input_data_folder_path               = f'/data/{input_data_folder}/'
     formatter_output_data_folder_path    = f'/app/partners/omop_partner_plus/data/formatter_output/{input_data_folder}/'
-    concept_table_path                   = f'/app/common/omop_cdm/CONCEPT.csv'
+    # concept_table_path                   = f'/app/common/omop_cdm/CONCEPT.csv'
 
 
     measurement_table_name            = 'measurement.csv'
@@ -53,7 +53,7 @@ try:
 
     observation = spark.read.load(input_data_folder_path+observation_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"').withColumnRenamed("measurement_id", "measurement_sup_id")
 
-    concept       = cf.spark_read(concept_table_path,spark)
+    # concept       = cf.spark_read(concept_table_path,spark)
 
 
 

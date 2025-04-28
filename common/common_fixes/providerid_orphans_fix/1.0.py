@@ -69,20 +69,23 @@ try:
     joined_df = input_table.join(small_provider_table, input_table[provider_field_name]==small_provider_table['SOURCE_PROVIDERID'], how="left")
 
 
-    bad_records = joined_df.filter(col('SOURCE_PROVIDERID').isNull()).select(provider_field_name)
+    # bad_records = joined_df.filter(col('SOURCE_PROVIDERID').isNull()).select(provider_field_name)
+    # bad_records_with_counts = bad_records.groupBy(provider_field_name).count()
+
+    bad_records_with_counts = (
+        joined_df.filter(col('SOURCE_PROVIDERID').isNull())
+                .groupBy(provider_field_name)
+                .agg(count("*").alias("count")))
 
 
-    joined_df =  joined_df.withColumn(provider_field_name, col('SOURCE_PROVIDERID'))
+    fixed_df = joined_df.drop(provider_field_name)
 
+    fixed_df =  fixed_df.withColumnRenamed( 'SOURCE_PROVIDERID', provider_field_name)
 
-    fixed_df = joined_df.drop('SOURCE_PROVIDERID')
-                                                                                                     
-
-    # bad_records =  input_table[~input_table[provider_field_name].isin(small_provider_table['SOURCE_PROVIDERID'])]
-
-
-                                                                                              
-
+                                 
+    original_columns = input_table.columns
+    updated_columns = [provider_field_name if c == "SOURCE_PROVIDERID" else c for c in original_columns]
+    fixed_df = fixed_df.select(*updated_columns)
 
     cf.write_pyspark_output_file(
                             payspark_df = fixed_df,
@@ -91,7 +94,7 @@ try:
 
 
     cf.write_pyspark_output_file(
-                            payspark_df = bad_records,
+                            payspark_df = bad_records_with_counts,
                             output_file_name = f"{examined_table_name.replace('.csv','')}_missing_providerids_.csv" ,
                             output_data_folder_path= output_data_folder_path+ "/fixers_output/"+examined_table_name_parsed+"_fixer/"+this_fix_name+"/")
 

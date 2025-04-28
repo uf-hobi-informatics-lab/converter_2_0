@@ -4,6 +4,6 @@
 !*/*/data_example.py
 common/omop_cdm/*.csv
 #Ignore Sensitive Files with Keys, Passwords etc.
-common/spark_secrets.py
+common/ovid_secrets.py
 # The prepending ! will make sure the example is tracked properly.
-!common/spark_secrets_example.py
+!common/ovid_secrets_example.py

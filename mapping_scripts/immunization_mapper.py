@@ -57,8 +57,8 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/formatter_output/'+ input_data_folder+'/'
-        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/deduplicator_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' 
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -119,6 +119,7 @@ try:
                                     unmapped_immunization['RAW_VX_DOSE_UNIT'].alias("RAW_VX_DOSE_UNIT"),
                                     unmapped_immunization['RAW_VX_ROUTE'].alias("RAW_VX_ROUTE"),
                                     unmapped_immunization['RAW_VX_BODY_SITE'].alias("RAW_VX_BODY_SITE"),
+                                    unmapped_immunization['RAW_VX_STATUS'].alias("RAW_VX_STATUS"),
                                     unmapped_immunization['RAW_VX_STATUS_REASON'].alias("RAW_VX_STATUS_REASON"),
                                     unmapped_immunization['RAW_VX_MANUFACTURER'].alias("RAW_VX_MANUFACTURER"),
                                     cf.get_current_time_udf().alias("UPDATED"),

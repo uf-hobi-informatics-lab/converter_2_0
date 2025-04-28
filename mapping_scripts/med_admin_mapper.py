@@ -58,7 +58,10 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/deduplicator_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' 
+        # deduplicated_data_folder_path = '/app/partners/'+input_partner.lower()+'/data/deduplicator_output/'+ input_data_folder+'/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' 
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -104,7 +107,7 @@ try:
                                     coalesce(mapping_medadmin_type_dict[upper(col("MEDADMIN_TYPE"))],col('MEDADMIN_TYPE')).alias("MEDADMIN_TYPE"),
                                     unmapped_med_admin['MEDADMIN_CODE'].alias("MEDADMIN_CODE"),                                    
                                     unmapped_med_admin['MEDADMIN_DOSE_ADMIN'].alias("MEDADMIN_DOSE_ADMIN"),
-                                    coalesce(mapping_medadmin_dose_admin_unit_dict[upper(col("MEDADMIN_DOSE_ADMIN_UNIT"))],col('MEDADMIN_DOSE_ADMIN_UNIT')).alias("MEDADMIN_DOSE_ADMIN_UNIT"),
+                                    coalesce(mapping_medadmin_dose_admin_unit_dict[col("MEDADMIN_DOSE_ADMIN_UNIT")],col('MEDADMIN_DOSE_ADMIN_UNIT')).alias("MEDADMIN_DOSE_ADMIN_UNIT"),
                                     coalesce(mapping_medadmin_route_dict[upper(col("MEDADMIN_ROUTE"))],col('MEDADMIN_ROUTE')).alias("MEDADMIN_ROUTE"),
                                     coalesce(mapping_medadmin_source_dict[upper(col("MEDADMIN_SOURCE"))],col('MEDADMIN_SOURCE')).alias("MEDADMIN_SOURCE"),
                                     unmapped_med_admin['RAW_MEDADMIN_MED_NAME'].alias("RAW_MEDADMIN_MED_NAME"),
@@ -114,7 +117,7 @@ try:
                                     unmapped_med_admin['RAW_MEDADMIN_ROUTE'].alias("RAW_MEDADMIN_ROUTE"),
                                     cf.get_current_time_udf().alias("UPDATED"),
                                     lit(input_partner.upper()).alias("SOURCE"),
-                                    # unmapped_med_admin['MEDADMINID'].alias("JOIN_FIELD"),
+                                    unmapped_med_admin['MEDADMINID'].alias("JOIN_FIELD"),
 
 
                                                             )
@@ -122,16 +125,16 @@ try:
     ###################################################################################################################################
     # Create the output file
     ###################################################################################################################################
-        # med_admin_with_additional_fileds = cf.append_additional_fields(
-        #     mapped_df = med_admin,
-        #     file_name = "deduplicated_med_admin.csv",
-        #     deduplicated_data_folder_path = deduplicated_data_folder_path,
-        #     join_field = "MEDADMINID",
-        #     spark = spark)
+        med_admin_with_additional_fileds = cf.append_additional_fields(
+            mapped_df = med_admin,
+            file_name = "deduplicated_med_admin.csv",
+            deduplicated_data_folder_path = deduplicated_data_folder_path,
+            join_field = "MEDADMINID",
+            spark = spark)
 
 
         cf.write_pyspark_output_file(
-                        payspark_df = med_admin,
+                        payspark_df = med_admin_with_additional_fileds,
                         output_file_name = "mapped_med_admin.csv",
                         output_data_folder_path= mapped_data_folder_path)
 

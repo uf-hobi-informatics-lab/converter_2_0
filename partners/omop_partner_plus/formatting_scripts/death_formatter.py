@@ -41,6 +41,8 @@ try:
 
     death_source = concept.filter(concept.domain_id == 'Type Concept').withColumnRenamed("concept_name", "death_source_name")
 
+    death_source = broadcast(death_source)
+
     joined_omop_death = omop_death.join(omop_death_sup, omop_death_sup['person_sup_id']== omop_death['person_id'], how = 'left')\
                                   .join(death_source, death_source['concept_id'] == omop_death['death_type_concept_id'], how = 'left')
 

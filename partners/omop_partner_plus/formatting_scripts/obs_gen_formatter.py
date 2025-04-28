@@ -58,7 +58,10 @@ try:
     concept       = cf.spark_read(concept_table_path,spark)
 
     observation_concept = concept.filter(concept.domain_id == 'Observation').withColumnRenamed("concept_code", "observation_concept_code").withColumnRenamed("vocabulary_id", "observation_vocabulary_id")
+    observation_concept = broadcast(observation_concept)
+
     unit_concept = concept.filter(concept.domain_id == 'Unit').withColumnRenamed("concept_code", "unit_concept_code")
+    unit_concept = broadcast(unit_concept)
 
     observation = spark.read.load(input_data_folder_path+observation_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')
     observation_sup = spark.read.load(input_data_folder_path+observation_sup_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"')\
@@ -86,10 +89,10 @@ try:
                                                     joined_observation['observation_id'].alias("PATID"),
                                                     joined_observation['visit_occurrence_id'].alias("ENCOUNTERID"),
                                                     joined_observation['provider_id'].alias("OBSGEN_PROVIDERID"),
-                                                    cf.format_date_udf(joined_observation['observation_date']).alias("OBSGEN_START_DATE"),
-                                                    cf.format_time_udf(joined_observation['observation_datetime']).alias("OBSGEN_START_TIME"),
-                                                    cf.format_date_udf(joined_observation['observation_date']).alias("OBSGEN_STOP_DATE"),
-                                                    cf.format_time_udf(joined_observation['observation_datetime']).alias("OBSGEN_STOP_TIME"),
+                                                    cf.format_date_udf(joined_observation['observation_start_date']).alias("OBSGEN_START_DATE"),
+                                                    cf.format_time_udf(joined_observation['observation_start_datetime']).alias("OBSGEN_START_TIME"),
+                                                    cf.format_date_udf(joined_observation['observation_start_date']).alias("OBSGEN_STOP_DATE"),
+                                                    cf.format_time_udf(joined_observation['observation_start_datetime']).alias("OBSGEN_STOP_TIME"),
                                                     joined_observation['observation_vocabulary_id'].alias("OBSGEN_TYPE"),
                                                     joined_observation['observation_concept_code'].alias("OBSGEN_CODE"),
                                                     joined_observation['qualifier_source_value'].alias("OBSGEN_RESULT_QUAL"),

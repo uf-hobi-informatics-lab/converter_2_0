@@ -73,11 +73,18 @@ try:
     dx_concept = concept.filter(concept.domain_id == 'Condition').withColumnRenamed("concept_code", "diagnosis_concept_code")\
                                                                 .withColumnRenamed("concept_name", "raw_diagnosis_concept")\
                                                                 .withColumnRenamed("vocabulary_id", "dx_vocabulary")
+
+    dx_concept = broadcast(dx_concept)
+
     #for DX_ORIGIN:
     dx_origin_concept = concept.filter(concept.domain_id == 'Type Concept').withColumnRenamed("concept_name", "diagnosis_origin_concept_code")
-    
+    dx_origin_concept = broadcast(dx_origin_concept)
+
+
     #FOR ENC_TYPE
     visit_enc_type = concept.filter(concept.domain_id == 'Visit').withColumnRenamed("concept_name", "visit_enc_type_code")
+
+    visit_enc_type = broadcast(visit_enc_type)
 
     joined_condition_occurrence = filtered_condition_occurrence.join(visit_occurrence, visit_occurrence['source_visit_occurrence_id'] == filtered_condition_occurrence['visit_occurrence_id'], how='left')\
                                             .join(dx_concept, dx_concept['concept_id'] == filtered_condition_occurrence['condition_concept_id'], how='left')\

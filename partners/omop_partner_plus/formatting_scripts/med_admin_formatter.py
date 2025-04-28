@@ -14,7 +14,7 @@ from commonFunctions import CommonFuncitons
 import argparse
 
 
-cf = CommonFuncitons('UFH_OMOP')
+cf = CommonFuncitons('omop_partner_plus')
 
 #Create SparkSession
 spark = cf.get_spark_session("med_admin_formatter")
@@ -49,8 +49,13 @@ try:
 
     concept       = cf.spark_read(concept_table_path,spark)
     drug_concept = concept.filter(concept.domain_id == 'Drug').withColumnRenamed("concept_name", "drug_concept_name").withColumnRenamed("vocabulary_id", "drug_vocabulary_id").withColumnRenamed("concept_code", "drug_concept_code")
+    drug_concept = broadcast(drug_concept)
+
     med_admin_drug_type_concept = concept.filter((col("concept_class_id") == "Drug Type") & (col("concept_name").rlike(r"(?i)admin") ))
+    med_admin_drug_type_concept = broadcast(med_admin_drug_type_concept)
+
     route_concept = concept.filter(concept.domain_id == 'Route').withColumnRenamed("concept_name", "route_concept_name")
+    route_concept = broadcast(route_concept)
 
 
 

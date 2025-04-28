@@ -20,7 +20,7 @@ import os
 
 
 
-partner_name = 'ufh_omop'
+partner_name = 'omop_partner_plus'
 mapped_table_name ='mapped_enrollment.csv'
 fixed_table_name = 'fixed_enrollment.csv'
 
@@ -37,7 +37,7 @@ input_data_folder = args.data_folder
 
 fixes = {
 
-    "1": {"fix_type":"common",    "fix_name":"patid_orphans_fix",   "version":"1.0", "src1":"mapped_demographic.csv", "src2":"NotUsed"},
+    "1": {"fix_type":"common",    "fix_name":"patid_orphans_fix",   "version":"1.0", "src1":"mapped_demographic.csv", "src2":"PATID"},
     # "2": {"fix_type":"custom",    "fix_name":"patid_orphans",   "version":"2.0"},
     # "3": {"fix_type":"custom",    "fix_name":"patid_orphans",   "version":"1.0"},
 

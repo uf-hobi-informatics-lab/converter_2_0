@@ -51,14 +51,16 @@ try:
     person_sup = spark.read.load(input_data_folder_path+person_sup_table_name,format="csv", sep="\t", inferSchema="false", header="true", quote= '"').withColumnRenamed("person_id", "person_sup_id")
     concept = cf.spark_read(concept_table_path,spark)
 
-    # person.show()
-    # person_sup.show()
-
-    # sys.exit()
 
     gender_concept = concept.filter(concept.domain_id == 'Gender').withColumnRenamed("concept_code", "gender_concept_code")
+    gender_concept = broadcast(gender_concept)
+
     ethnicity_concept = concept.filter(concept.domain_id == 'Ethnicity').withColumnRenamed("concept_code", "ethnicity_concept_code")
-    race_concept = concept.filter(concept.domain_id == 'Race').withColumnRenamed("concept_code", "race_concept_code")
+    ethnicity_concept = broadcast(ethnicity_concept)
+
+    race_concept = concept.filter(concept.domain_id == 'Race').withColumnRenamed("concept_code", "race_concept_code").withColumnRenamed("concept_name", "race_concept_name")
+    race_concept = broadcast(race_concept)
+
 
     joined_person = person.join(gender_concept, gender_concept['concept_id']==person['gender_concept_id'], how='left').drop("concept_id")\
                                                 .join(ethnicity_concept, ethnicity_concept['concept_id']==person['ethnicity_concept_id'], how='left')\
@@ -66,6 +68,39 @@ try:
                                                 .join(person_sup, person_sup['person_sup_id']== person['person_id'], how = 'left')
                                                 
 
+
+  #########################################################################################################################################
+    # this should map Y if the correct race is populated for each race_eth column
+
+    def get_race_eth(race_concept_name, col_type):
+        if race_concept_name is None:
+            return None
+        
+        race_value = race_concept_name.lower().strip()
+
+        # Define the allowed mappings for each race column type.
+        race_mapping = {
+            'hispanic': ['hispanic'],
+            'native_american': ['american indian', 'alaska native'],
+            'asian': ['asian', 'asian indian'],
+            'black': ['black', 'black or african american'],
+            'white': ['white'],
+            'middle eastern': ['middle eastern', 'Middle Eastern or North African'],
+            'native hawaiian': ['native hawaiian', 'Native Hawaiian or Other Pacific Islander'],
+                        
+        }
+
+        # Get the list of valid values for the provided column label.
+        valid_values = race_mapping.get(col_type.lower())
+
+        if valid_values is None:
+            # If no valid values are defined for the col_type, just return None (or handle the error)
+            return None
+
+        # Return 'Y' if we have a match; otherwise return None.
+        return 'Y' if any(keyword.lower() in race_value for keyword in valid_values) else None
+
+    get_race_eth_udf = udf(get_race_eth, StringType())        
 
 
 
@@ -85,6 +120,14 @@ try:
                                                     joined_person['sex'].alias("GENDER_IDENTITY"),
                                                     joined_person['ethnicity_concept_code'].alias("HISPANIC"),
                                                     joined_person['race_concept_code'].alias("RACE"),
+                                                    joined_person['race_concept_code'].alias("RACE_ETH_MISSING"),
+                                                    get_race_eth_udf(col('race_concept_name'), lit("native_american")).alias("RACE_ETH_AI_AN"),
+                                                    get_race_eth_udf(col('race_concept_name'), lit("asian")).alias("RACE_ETH_ASIAN"),
+                                                    get_race_eth_udf(col('race_concept_name'), lit("black")).alias("RACE_ETH_BLACK"),
+                                                    get_race_eth_udf(col('race_concept_name'), lit("hispanic")).alias("RACE_ETH_HISPANIC"),
+                                                    get_race_eth_udf(col('race_concept_name'), lit("middle eastern")).alias("RACE_ETH_ME_NA"),
+                                                    get_race_eth_udf(col('race_concept_name'), lit("native hawaiian")).alias("RACE_ETH_NH_PI"),
+                                                    get_race_eth_udf(col('race_concept_name'), lit("white")).alias("RACE_ETH_WHITE"),
                                                     lit('N').alias("BIOBANK_FLAG"),
                                                     joined_person['spoken_language'].alias("PAT_PREF_LANGUAGE_SPOKEN"),
                                                     joined_person['sex_source_value'].alias("RAW_SEX"),

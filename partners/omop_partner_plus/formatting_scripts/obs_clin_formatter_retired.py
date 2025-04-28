@@ -15,7 +15,7 @@ import pickle
 from pyspark.sql import SparkSession
 import argparse
 
-cf = CommonFuncitons('omop_partner_plus')
+cf = CommonFuncitons('emy')
 
 
 #Create SparkSession
@@ -49,7 +49,7 @@ try:
 ###################################################################################################################################
 
     input_data_folder_path               = f'/data/{input_data_folder}/'
-    formatter_output_data_folder_path    = f'/app/partners/omop_partner_plus/data/formatter_output/{input_data_folder}/'
+    formatter_output_data_folder_path    = f'/app/partners/emy/data/formatter_output/{input_data_folder}/'
     concept_table_path                   = f'/app/common/omop_cdm/CONCEPT.csv'
 
 
@@ -135,7 +135,7 @@ except Exception as e:
     spark.stop()
     cf.print_failure_message(
                             folder  = input_data_folder,
-                            partner = 'omop_partner_plus',
+                            partner = 'emy',
                             job     = 'obs_clin_formatter.py',
                             text = str(e))
 

@@ -56,10 +56,17 @@ try:
                                                 .withColumnRenamed("concept_code", "measurement_concept_code")\
                                                 .withColumnRenamed("concept_name", "measurement_name")\
                                                 .withColumnRenamed("vocabulary_id", "measurement_vocabulary_id")
-    
+    measurement_concept = broadcast(measurement_concept)
+
+
     meas_value_concept  = concept.filter(concept.domain_id == 'Meas Value').withColumnRenamed("concept_code", "meas_value_concept_code")
+    meas_value_concept = broadcast(meas_value_concept)
+
     meas_value_operator_concept  = concept.filter(concept.domain_id == 'Meas Value Operator').withColumnRenamed("concept_name", "meas_value_operator_concept_name")
+    meas_value_operator_concept = broadcast(meas_value_operator_concept)
+
     unit_concept  = concept.filter(concept.domain_id == 'Unit').withColumnRenamed("concept_code", "unit_concept_code")
+    unit_concept = broadcast(unit_concept)
 
 
 

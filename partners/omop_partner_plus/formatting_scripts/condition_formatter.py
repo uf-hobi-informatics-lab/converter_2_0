@@ -60,9 +60,12 @@ try:
                                                                         .withColumnRenamed("concept_name", "condition_concept_name")\
                                                                 .withColumnRenamed("vocabulary_id", "condition_vocabulary_id")
 
+    condition_concept = broadcast(condition_concept)
+
     #for RAW_CONDITION_SOURCE:
     condition_concept_source = concept.filter(concept.domain_id == 'Type Concept').withColumnRenamed("concept_name", "raw_condition_source")\
                                                                 
+    condition_concept_source = broadcast(condition_concept_source)
 
     filter_values = ["32840", "32865", "38000245"] # Only rows where condition_type_concept_id are in condition_type_concept_id, or 32840: "EHR problem list", or 32865: "Patient self-report"
     #both concept id's above are from the OMOP Type Concept Vocabulary

@@ -56,9 +56,10 @@ try:
     procedure_concept = concept.filter(concept.domain_id == 'Procedure').withColumnRenamed("concept_code", "procedure_concept_code")\
                                                                         .withColumnRenamed("concept_name", "procedure_name")\
                                                                         .withColumnRenamed("vocabulary_id", "procedure_vocabulry_id")
+    procedure_concept = broadcast(procedure_concept)
 
     visit_concept = concept.filter(concept.domain_id == 'Visit').withColumnRenamed("concept_name", "visit_concept_name")
-
+    visit_concept = broadcast(visit_concept)
 
 
 

@@ -58,7 +58,7 @@ try:
         partner_dictionaries_path = "partners."+input_partner+".dictionaries"
         partner_dictionaries = importlib.import_module(partner_dictionaries_path)
 
-        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder  + '/'
+        deduplicated_data_folder_path = '/app/partners/' + input_partner.lower() + '/data/deduplicator_output/' + input_data_folder + '/' 
         mapped_data_folder_path    = '/app/partners/'+input_partner.lower()+'/data/mapper_output/'+ input_data_folder+'/'
 
 
@@ -111,7 +111,7 @@ try:
                                     unmapped_encounter['DRG'].alias("DRG"),
                                     coalesce(mapping_drg_type_dict[upper(col("DRG_TYPE"))],col('DRG_TYPE')).alias("DRG_TYPE"),
                                     coalesce(mapping_admitting_source_dict[upper(col("ADMITTING_SOURCE"))],col('ADMITTING_SOURCE')).alias("ADMITTING_SOURCE"),
-                                    coalesce(mapping_payer_type_secondary_dict[upper(col("PAYER_TYPE_PRIMARY"))],col('PAYER_TYPE_PRIMARY')).alias("PAYER_TYPE_PRIMARY"),
+                                    coalesce(mapping_payer_type_primary_dict[upper(col("PAYER_TYPE_PRIMARY"))],col('PAYER_TYPE_PRIMARY')).alias("PAYER_TYPE_PRIMARY"),
                                     coalesce(mapping_payer_type_secondary_dict[upper(col("PAYER_TYPE_SECONDARY"))],col('PAYER_TYPE_SECONDARY')).alias("PAYER_TYPE_SECONDARY"),
                                     coalesce(mapping_facility_type_dict[upper(col("FACILITY_TYPE"))],col('FACILITY_TYPE')).alias("FACILITY_TYPE"),
                                     unmapped_encounter['RAW_SITEID'].alias("RAW_SITEID"),

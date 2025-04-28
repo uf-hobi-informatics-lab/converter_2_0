@@ -27,6 +27,7 @@ input_data_folder         = args.data_folder
 examined_table_name       = args.table
 input_partner_name        = args.partner
 patid_source_table        = args.src1
+patid_column_name         = args.src2
 input_data_folder_path    = args.input_path
 output_data_folder_path   = args.output_path
 fixed_table_name          = args.fixed_table_name
@@ -56,14 +57,7 @@ try:
 
 
     existing_patids =  patid_source_table.select( patid_source_table['PATID'].alias('SOURCE_PATID')).distinct()
-    patids_to_be_examined =  input_table.select( input_table['PATID'].alias('TO_BE_EXAMINED_PATID')).distinct()
-
-
-    # print ("existing_patids.count()")
-    # print (existing_patids.count())
-
-    # print ("patids_to_be_examined.count()")
-    # print (patids_to_be_examined.count())
+    patids_to_be_examined =  input_table.select( input_table[patid_column_name].alias('TO_BE_EXAMINED_PATID')).distinct()
 
 
     orphan_patid = patids_to_be_examined.subtract(existing_patids)
@@ -72,7 +66,7 @@ try:
   
   
     
-    fixed_table = input_table.join(shared_patids, shared_patids['SOURCE_PATID']==input_table['PATID'], how='inner').drop('SOURCE_PATID').drop('TO_BE_EXAMINED_PATID')
+    fixed_table = input_table.join(shared_patids, shared_patids['SOURCE_PATID']==input_table[patid_column_name], how='inner').drop('SOURCE_PATID').drop('TO_BE_EXAMINED_PATID')
 
 
     cf.write_pyspark_output_file(

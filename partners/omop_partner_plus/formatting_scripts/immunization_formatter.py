@@ -51,7 +51,10 @@ try:
 
     concept       = cf.spark_read(concept_table_path,spark)
     immunization_concept = concept.filter(concept.vocabulary_id == 'CVX').withColumnRenamed("concept_name", "drug_concept_name").withColumnRenamed("vocabulary_id", "drug_vocabulary_id").withColumnRenamed("concept_code", "drug_concept_code")
+    immunization_concept = broadcast(immunization_concept)
+
     route_concept = concept.filter(concept.domain_id == 'Route').withColumnRenamed("concept_name", "route_concept_name")
+    route_concept = broadcast(route_concept)
 
 
 

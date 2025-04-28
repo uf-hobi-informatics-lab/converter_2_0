@@ -1,0 +1,15 @@
+2025-04-23 08:38:33 INFO - Initializing cluster with the following settings:
+2025-04-23 08:38:33 INFO - Session ID: onefl_converter_866121_20250423
+2025-04-23 08:38:33 INFO - Data Dir: /data/blobs/oneflincoming/veritas
+2025-04-23 08:38:33 INFO - Work Dir: /processing/ali_n/ali_branches/bitbucket/EMY_7_0_formatters/ovid
+2025-04-23 08:38:33 INFO - Out Dir: /processing/ali_n/ali_branches/bitbucket/EMY_7_0_formatters/ovid
+2025-04-23 08:38:33 INFO - File: onefl_converter.py
+2025-04-23 08:38:33 INFO - Args: ['-p', 'vrt', '-t', 'hash_token', '-j', 'format', '-f', 'death_data']
+2025-04-23 08:38:33 INFO - Master memory: 2g
+2025-04-23 08:38:33 INFO - Worker memory: 8g
+2025-04-23 08:38:33 INFO - Creating the cluster directory for onefl_converter_866121_20250423
+2025-04-23 08:38:33 INFO - Successfully wrote onefl_converter_866121_20250423 to /processing/ali_n/converter_cluster//clusters/onefl_converter_866121_20250423/docker-compose.yml
+2025-04-23 08:38:33 INFO - Booting the cluster for onefl_converter_866121_20250423
+2025-04-23 08:48:24 INFO - Shutting down cluster with session id: onefl_converter_866121_20250423
+2025-04-23 08:48:47 INFO - Removing cluster directory for onefl_converter_866121_20250423
+2025-04-23 08:48:47 INFO - Processed finished in 00:10:14.19
