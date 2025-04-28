@@ -60,25 +60,7 @@ phi_loinc_list = [
 
 partners_list = [
     
-                 "avh",
-                 "bnd",
-                 "chp",
-                 "cht",
-                 "emy",
-                 "flm",
-                 "nch",
-                 "orl",
-                 "tmh",
-                 "uab",
-                 "ufh",
-                 "tmc",
-                 "tma",
-                 "umi",
-                 "usf",
-                 "tgh",
-                 "ams",
-                 "uci",
-                 "vrt",
+                 
                  "omop_partner_1",
                  "omop_partner_plus",
                  "pcornert_partner_1",
